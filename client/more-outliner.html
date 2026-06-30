@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MORE Outliner</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@700;900&family=Courier+Prime:wght@400;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #f8f6f1; --bg-secondary: #ebe8df; --text-primary: #2c2416;
+            --text-secondary: #6b6355; --accent: #d4622f; --accent-light: #e89166;
+            --border: #d4cbb8; --shadow: rgba(44, 36, 22, 0.1); --node-bg: #ffffff;
+            --clone-indicator: #8b5cf6;
+        }
+        body { font-family: 'IBM Plex Mono', monospace; background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; }
+        .app-container { min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: var(--bg-secondary); border-bottom: 3px solid var(--accent); padding: 0.75rem 2rem 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px var(--shadow); }
+        .header-top { display: flex; align-items: center; gap: 1rem; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; color: var(--accent); flex-shrink: 0; white-space: nowrap; }
+        .toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn { background: var(--node-bg); border: 2px solid var(--border); color: var(--text-primary); padding: 0.5rem 1rem; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; font-weight: 600; text-transform: uppercase; }
+        .btn:hover:not(:disabled) { background: var(--accent); color: white; border-color: var(--accent); transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .main-content { flex: 1; display: grid; grid-template-columns: 280px 1fr; }
+        .sidebar { background: var(--bg-secondary); border-right: 2px solid var(--border); padding: 2rem 1.5rem; overflow-y: auto; }
+        .sidebar h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 0.8rem; color: var(--accent); }
+        .sidebar-section { margin-bottom: 1.5rem; }
+        .style-option { padding: 0.6rem; margin-bottom: 0.4rem; background: var(--node-bg); border: 2px solid var(--border); cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+        .style-option:hover { border-color: var(--accent); transform: translateX(4px); }
+        .style-option.active { background: var(--accent-light); color: white; border-color: var(--accent); }
+        .editor-area { padding: 3rem; overflow-y: auto; background: linear-gradient(135deg, var(--bg-primary) 0%, #fdfcf9 100%); position: relative; }
+        .outline-container { max-width: 900px; margin: 0 auto; background: var(--node-bg); padding: 2.5rem; box-shadow: 0 8px 32px var(--shadow); border: 3px solid var(--border); min-height: 400px; }
+        
+        .title-line {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid var(--accent);
+        }
+        .title-toggle {
+            background: var(--accent);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .title-toggle:hover {
+            background: var(--accent-light);
+            transform: scale(1.05);
+        }
+        .title-toggle.collapsed::after { content: '+'; }
+        .title-toggle.expanded::after { content: '−'; }
+        .title-input {
+            flex: 1;
+            background: transparent;
+            border: 2px solid transparent;
+            padding: 0.5rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            outline: none;
+            resize: none;
+            overflow: hidden;
+            line-height: 1.2;
+        }
+        .title-input:focus {
+            border-color: var(--accent);
+            background: rgba(212, 98, 47, 0.05);
+        }
+        
+        .drop-zone-end { min-height: 50px; border: 3px dashed var(--border); margin-top: 2rem; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 0.9rem; transition: all 0.3s; }
+        .drop-zone-end.drag-over { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; font-weight: 600; }
+        .outline-node { margin: 0.75rem 0; padding-left: calc(var(--depth, 0) * 2.5rem); position: relative; }
+        .node-line { display: flex; align-items: flex-start; gap: 0.5rem; }
+        .drag-handle { width: 20px; height: 20px; cursor: move; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 1.2rem; flex-shrink: 0; margin-top: 0.4rem; opacity: 0; transition: opacity 0.2s; }
+        .node-line:hover .drag-handle { opacity: 1; }
+        .drag-handle:hover { color: var(--accent); }
+        .node-number { min-width: 3rem; text-align: right; font-weight: 600; color: var(--accent); font-size: 0.9rem; padding-top: 0.5rem; flex-shrink: 0; }
+        .expand-btn { background: var(--accent); color: white; border: none; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; flex-shrink: 0; transition: all 0.2s; }
+        .expand-btn:hover { background: var(--accent-light); transform: scale(1.1); }
+        .expand-btn.collapsed::after { content: '+'; }
+        .expand-btn.expanded::after { content: '−'; }
+        .node-content-wrapper { flex: 1; display: flex; flex-direction: column; }
+        .node-text-container { display: flex; gap: 0.5rem; }
+        .clone-indicator { background: var(--clone-indicator); color: white; padding: 0.2rem 0.4rem; font-size: 0.7rem; border-radius: 3px; margin-top: 0.5rem; }
+        .node-text { width: 100%; background: transparent; border: 2px solid transparent; padding: 0.5rem; font-family: inherit; color: var(--text-primary); outline: none; line-height: 1.5; word-break: break-word; white-space: pre-wrap; min-height: 1.6em; cursor: text; }
+        .node-text:focus { border-color: var(--accent); background: rgba(212, 98, 47, 0.05); }
+        .node-text:empty::before { content: attr(data-placeholder); color: var(--text-secondary); opacity: 0.5; pointer-events: none; display: block; }
+        .node-comment { width: 100%; background: rgba(107, 99, 85, 0.03); border: 2px solid transparent; border-left: 3px solid var(--text-secondary); padding: 0.5rem 0.5rem 0.5rem 0.75rem; font-family: inherit; color: var(--text-secondary); font-style: italic; outline: none; resize: none; overflow: hidden; line-height: 1.4; margin-top: 0.25rem; }
+        .node-comment:focus { border-color: var(--accent); background: rgba(107, 99, 85, 0.08); }
+        .node-comment::placeholder { color: var(--text-secondary); opacity: 0.5; }
+        .node-actions { display: flex; gap: 0.25rem; margin-top: 0.25rem; opacity: 0; flex-wrap: wrap; transition: opacity 0.2s; }
+        .node-line:hover .node-actions { opacity: 1; }
+        .action-btn { background: var(--bg-secondary); border: 1px solid var(--border); padding: 0.25rem 0.5rem; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; }
+        .action-btn:hover { background: var(--accent); color: white; }
+        .action-btn.clone-btn { background: var(--clone-indicator); color: white; }
+        .outline-node.dragging { opacity: 0.4; }
+        .outline-node.drag-over-before .node-line { border-top: 3px solid var(--accent); margin-top: -3px; }
+        .outline-node.drag-over-child .node-line { outline: 2px solid #10b981; background: rgba(16, 185, 129, 0.08); }
+        .outline-node.drag-over-after .node-line { border-bottom: 3px solid #8b5cf6; margin-bottom: -3px; }
+        
+        /* Spacing variations */
+        .spacing-tight .outline-node { margin: 0; padding: 0; }
+        .spacing-tight .node-text { padding: 0 0.15rem; line-height: 1.05; font-size: 0.85rem; min-height: 0.8rem; }
+        .spacing-tight .node-line { gap: 0.1rem; align-items: flex-start; }
+        .spacing-tight .expand-btn { width: 14px; height: 14px; font-size: 0.65rem; margin-top: 1px; }
+        .spacing-tight .node-number { font-size: 0.7rem; padding-top: 1px; min-width: 2.5rem; line-height: 1.05; }
+        .spacing-tight .drag-handle { font-size: 0.85rem; width: 14px; height: 14px; margin-top: 1px; }
+        .spacing-tight .node-actions { margin-top: 0.05rem; gap: 0.15rem; }
+        .spacing-tight .action-btn { padding: 0.1rem 0.25rem; font-size: 0.6rem; }
+        .spacing-tight .clone-indicator { padding: 0.1rem 0.3rem; font-size: 0.65rem; margin-top: 0.2rem; }
+        .spacing-tight .node-comment { margin-top: 0.15rem; padding: 0.1rem 0.15rem 0.1rem 0.5rem; font-size: 0.8rem; line-height: 1.1; }
+        
+        .spacing-normal .outline-node { margin: 0.15rem 0; }
+        .spacing-normal .node-text { padding: 0.2rem 0.3rem; line-height: 1.25; font-size: 0.95rem; }
+        .spacing-normal .node-line { gap: 0.25rem; }
+        .spacing-normal .expand-btn { width: 18px; height: 18px; }
+        .spacing-normal .node-number { font-size: 0.85rem; }
+        .spacing-normal .node-comment { margin-top: 0.3rem; padding: 0.3rem 0.3rem 0.3rem 0.6rem; font-size: 0.9rem; }
+        
+        .spacing-relaxed .outline-node { margin: 0.35rem 0; }
+        .spacing-relaxed .node-text { padding: 0.35rem 0.4rem; line-height: 1.4; }
+        .spacing-relaxed .node-line { gap: 0.4rem; }
+        .spacing-relaxed .node-comment { margin-top: 0.4rem; padding: 0.4rem 0.4rem 0.4rem 0.75rem; }
+        
+        /* Custom spacing - overrides preset */
+        .outline-container[data-custom-spacing="true"] .outline-node {
+            margin-top: calc(var(--custom-node-margin) * 1px);
+            margin-bottom: calc(var(--custom-node-margin) * 1px);
+        }
+        .outline-container[data-custom-spacing="true"] .node-text {
+            padding: calc(var(--custom-text-padding) * 1px);
+            line-height: var(--custom-line-height);
+        }
+        
+        .font-mono { font-family: 'IBM Plex Mono', monospace; }
+        .font-serif { font-family: 'IBM Plex Serif', serif; }
+        .font-courier { font-family: 'Courier Prime', monospace; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        
+        /* Print styles */
+        @media print {
+            .header, .sidebar, .toolbar, .node-actions, .drag-handle, .expand-btn, .drop-zone-end {
+                display: none !important;
+            }
+            .main-content { grid-template-columns: 1fr; }
+            .editor-area { padding: 0; background: white; }
+            .outline-container { box-shadow: none; border: none; padding: 1rem; max-width: 100%; }
+            .outline-node { page-break-inside: avoid; }
+            .clone-indicator { display: none; }
+            
+            /* Print presentation mode */
+            .presentation-mode { 
+                display: block !important; 
+                position: static !important;
+                background: white !important;
+            }
+            .presentation-controls { display: none !important; }
+            .slide-container { 
+                padding: 0 !important;
+                display: block !important;
+                align-items: flex-start !important;
+                justify-content: flex-start !important;
+            }
+            .slide { 
+                display: block !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-height: 100vh !important;
+                height: auto !important;
+                padding: 2rem !important;
+                margin: 0 !important;
+                background: white !important;
+            }
+            .slide:last-child { 
+                page-break-after: avoid !important; 
+            }
+        }
+        
+        .presentation-mode { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1410; z-index: 1000; display: none; flex-direction: column; }
+        .presentation-mode.active { display: flex; }
+        .slide-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4rem; }
+        .slide { background: linear-gradient(135deg, var(--node-bg) 0%, var(--bg-primary) 100%); padding: 4rem; max-width: 1200px; width: 100%; min-height: 600px; border: 4px solid var(--accent); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
+        .slide h1 { font-family: 'Playfair Display', serif; font-size: 3rem; color: var(--accent); margin-bottom: 2rem; border-bottom: 3px solid var(--accent); padding-bottom: 1rem; }
+        .slide ul { list-style: none; font-size: 1.5rem; line-height: 2; }
+        .slide li { padding-left: 2rem; position: relative; margin: 1rem 0; }
+        .slide li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); font-weight: bold; }
+        
+        /* Ensure only one slide shows on screen */
+        @media screen {
+            .slide-container { position: relative; }
+        }
+        
+        /* Print: show all slides, one per page */
+        @media print {
+            .print-all-slides .slide { display: block !important; }
+        }
+        .presentation-controls { background: rgba(26, 20, 16, 0.95); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid var(--accent); }
+        .nav-btn { background: var(--accent); color: white; border: none; padding: 0.75rem 1.5rem; cursor: pointer; transition: all 0.2s; text-transform: uppercase; font-weight: 600; }
+        .nav-btn:hover:not(:disabled) { background: var(--accent-light); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-format { min-width: 2rem; padding: 0.5rem 0.65rem; font-size: 1rem; text-transform: none; font-family: serif; }
+        .btn-format-b { font-weight: 900; }
+        .btn-format-i { font-style: italic; font-weight: 400; }
+        .btn-format-u { text-decoration: underline; font-weight: 400; }
+        .toolbar-sep { width: 1px; background: var(--border); margin: 0.15rem 0.25rem; align-self: stretch; }
+        .manual-link { font-size: 0.78rem; color: var(--text-secondary); text-decoration: none; border: 1px solid var(--border); padding: 0.3rem 0.65rem; white-space: nowrap; transition: all 0.2s; flex-shrink: 0; }
+        .manual-link:hover { color: var(--accent); border-color: var(--accent); }
+        .saved-stamp { font-size: 0.7rem; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; opacity: 0.75; line-height: 1.3; }
+        .node-image-wrap { padding: 0.4rem 0 0.2rem; }
+        .node-image { max-width: 100%; display: block; border: 2px solid var(--border); background: #fafafa; }
+        .node-image-controls { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem; font-size: 0.7rem; color: var(--text-secondary); }
+        .node-image-size-row { display: flex; align-items: center; gap: 0.5rem; }
+        .node-image-alt { background: none; border: none; border-bottom: 1px dashed var(--border); color: var(--text-secondary); font-size: 0.7rem; font-family: inherit; outline: none; width: 100%; resize: none; display: block; line-height: 1.4; padding: 0; }
+        .node-image-alt:focus { border-bottom-color: var(--accent); color: var(--text-primary); }
+        .node-image-resize { width: 100px; cursor: pointer; }
+        .color-picker-wrap { position: relative; display: inline-flex; }
+        .color-picker-popover { position: absolute; top: calc(100% + 4px); left: 0; background: var(--node-bg); border: 2px solid var(--border); padding: 0.5rem 0.6rem; z-index: 200; box-shadow: 0 4px 12px var(--shadow); }
+        .cp-grid { display: grid; grid-template-columns: repeat(10, 18px); gap: 3px; }
+        .cs { width: 16px; height: 16px; border-radius: 3px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; transition: transform .1s; }
+        .cs:hover { transform: scale(1.2); }
+        .cs.cs-sel { border-color: #1e293b; }
+        .cp-custom { display: flex; align-items: center; gap: 6px; margin-top: 0.4rem; padding-top: 0.35rem; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-secondary); }
+        .cp-custom input[type=color] { width: 28px; height: 22px; border: 1px solid var(--border); border-radius: 3px; padding: 1px; cursor: pointer; }
+
+        /* Search bar */
+        .search-bar { display: flex; gap: 0.35rem; align-items: center; }
+        .search-input { background: var(--node-bg); border: 2px solid var(--border); color: var(--text-primary); padding: 0.4rem 0.6rem; font-family: inherit; font-size: 0.82rem; outline: none; width: 160px; }
+        .search-input:focus { border-color: var(--accent); }
+        .search-count { font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; min-width: 4rem; text-align: center; }
+        .node-editor.search-match { background: rgba(212,98,47,0.08) !important; }
+        .node-editor.search-current { background: rgba(212,98,47,0.2) !important; box-shadow: inset 0 0 0 2px var(--accent) !important; }
+
+        /* Clickable links */
+        .node-text a { color: var(--accent); text-decoration: underline; }
+        .node-text a:hover { color: var(--accent-light); }
+        .node-comment-view { width: 100%; background: rgba(107,99,85,0.03); border: 2px solid transparent; border-left: 3px solid var(--text-secondary); padding: 0.5rem 0.5rem 0.5rem 0.75rem; font-family: inherit; color: var(--text-secondary); font-style: italic; line-height: 1.4; margin-top: 0.25rem; cursor: text; white-space: pre-wrap; word-break: break-word; font-size: inherit; }
+        .node-comment-view:hover { border-color: var(--accent-light); }
+        .node-comment-view a { color: var(--accent); text-decoration: underline; font-style: normal; }
+        .node-comment-view a:hover { color: var(--accent-light); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState, useRef, useEffect, useLayoutEffect, useMemo } = React;
+        
+        const initialOutline = [
+            { id: 1, text: 'Welcome to MORE Outliner', cloneId: null, comment: 'This is a comment - it appears directly below the node text in italic gray. Perfect for notes and explanations!', children: [
+                { id: 2, text: 'Full-featured outliner with all core features working', cloneId: null, comment: '', children: [] },
+                { id: 3, text: 'Features', cloneId: null, comment: '', children: [
+                    { id: 4, text: 'Comments attached to any node', cloneId: null, comment: '', children: [] },
+                    { id: 5, text: 'Save and Load your work', cloneId: null, comment: '', children: [] },
+                    { id: 6, text: 'Print directly from browser', cloneId: null, comment: '', children: [] },
+                    { id: 7, text: 'Export to OPML format', cloneId: null, comment: '', children: [] },
+                    { id: 8, text: 'Adjustable spacing - Tight/Normal/Relaxed/Custom', cloneId: null, comment: '', children: [] },
+                    { id: 12, text: 'Presentation mode with depth control', cloneId: null, comment: '', children: [] },
+                    { id: 13, text: 'Auto-continuation for long slides', cloneId: null, comment: '', children: [] },
+                    { id: 14, text: 'Drag and drop to reorder', cloneId: null, comment: '', children: [] },
+                    { id: 15, text: 'Clone nodes with sync', cloneId: null, comment: '', children: [] },
+                    { id: 16, text: 'Undo/Redo support', cloneId: null, comment: '', children: [] }
+                ]}
+            ]},
+            { id: 9, text: 'Try It Out', cloneId: null, comment: '', children: [
+                { id: 10, text: 'Click + Comment to add a comment', cloneId: null, comment: '', children: [] },
+                { id: 11, text: 'Use Hide/Show Comments button to toggle', cloneId: null, comment: '', children: [] }
+            ]}
+        ];
+        
+        const toRoman = (n, upper = true) => {
+            const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
+            const syms = upper
+                ? ['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I']
+                : ['m','cm','d','cd','c','xc','l','xl','x','ix','v','iv','i'];
+            let r = '';
+            vals.forEach((v, i) => { while (n >= v) { r += syms[i]; n -= v; } });
+            return r;
+        };
+
+        const getNodeMarker = (style, depth, index, prefix) => {
+            if (style === 'numbered') return `${prefix}${index + 1}`;       // Legal: 1, 1.1, 1.1.1
+            if (style === 'numeric')  return `${index + 1}.`;               // Simple: 1. 2. 3.
+            if (style === 'harvard') {
+                const d = depth % 5;
+                if (d === 0) return toRoman(index + 1) + '.';               // I. II. III.
+                if (d === 1) return String.fromCharCode(65 + index % 26) + '.'; // A. B. C.
+                if (d === 2) return `${index + 1}.`;                        // 1. 2. 3.
+                if (d === 3) return String.fromCharCode(97 + index % 26) + '.'; // a. b. c.
+                return toRoman(index + 1, false) + '.';                     // i. ii. iii.
+            }
+            if (style === 'bullets')  return ['•','◦','▪','▫','–'][depth % 5];
+            if (style === 'leaders')  return ['→','◆','✦','✧','✔'][depth % 5];
+            return '';
+        };
+
+        // Strip HTML tags for plain-text comparison (module-level so useMemo can use it)
+        const stripForSearch = (html) => (html || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+        // Wrap bare URLs in <a> tags inside HTML (avoids double-wrapping existing links)
+        const linkifyHtml = (html) => {
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            const walk = (node) => {
+                if (node.nodeType === 3) { // TEXT_NODE
+                    const text = node.textContent;
+                    const urlRe = /(https?:\/\/[^\s<>"']+)/g;
+                    if (!urlRe.test(text)) return;
+                    urlRe.lastIndex = 0;
+                    const frag = document.createDocumentFragment();
+                    let last = 0, m;
+                    while ((m = urlRe.exec(text)) !== null) {
+                        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+                        const a = document.createElement('a');
+                        a.href = m[1]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+                        a.textContent = m[1];
+                        frag.appendChild(a);
+                        last = m.index + m[1].length;
+                    }
+                    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+                    node.parentNode.replaceChild(frag, node);
+                } else if (node.nodeType === 1 && node.tagName !== 'A') {
+                    [...node.childNodes].forEach(walk);
+                }
+            };
+            [...div.childNodes].forEach(walk);
+            return div.innerHTML;
+        };
+
+        // Linkify plain text for comment display (escapes HTML first)
+        const linkifyText = (text) => {
+            const safe = (text || '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return safe.replace(/(https?:\/\/[^\s]+)/g, (url) =>
+                `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+            );
+        };
+
+        function OutlineNode({ node, depth, index, siblingCount, numberPrefix, parentId, onUpdate, onUpdateComment, onUpdateImageProps, onAddChild, onAddComment, onAddSibling, onDelete, onClone, onMove, onIndent, onOutdent, onDragStart, onDragOver, onDrop, onDragEnd, expanded, onToggleExpand, numberingStyle, clones, dragOverId, dragOverZone, showComments, onHoist, searchMatchIds, searchCurrentId }) {
+            const editorRef = useRef(null);
+            const nodeRef = useRef(null);
+            const isExpanded = expanded[node.id] !== false;
+            const hasChildren = node.children && node.children.length > 0;
+            const isClone = node.cloneId !== null;
+            const cloneCount = clones[node.cloneId] ? clones[node.cloneId].length : 0;
+            const nodeNumber = numberingStyle !== 'default' ? getNodeMarker(numberingStyle, depth, index, numberPrefix) : '';
+            const isDragOver = dragOverId === node.id;
+            const isSearchMatch = searchMatchIds ? searchMatchIds.has(node.id) : false;
+            const isSearchCurrent = searchCurrentId === node.id;
+            const [commentEditing, setCommentEditing] = useState(false);
+            
+            // Sync innerHTML when text changes externally (e.g. clone sync, load)
+            useLayoutEffect(() => {
+                if (editorRef.current && editorRef.current.innerHTML !== node.text) {
+                    editorRef.current.innerHTML = node.text || '';
+                }
+            }, [node.text]);
+
+            useEffect(() => {
+                // Auto-resize comment textarea
+                const commentArea = editorRef.current?.parentElement?.parentElement?.querySelector('.node-comment');
+                if (commentArea) {
+                    commentArea.style.height = 'auto';
+                    commentArea.style.height = commentArea.scrollHeight + 'px';
+                }
+            }, [node.comment, showComments]);
+
+            useEffect(() => {
+                if (editorRef.current && node.text === '') {
+                    setTimeout(() => {
+                        if (editorRef.current) {
+                            editorRef.current.focus();
+                        }
+                    }, 50);
+                }
+            }, []);
+
+            // Scroll to this node when it becomes the active search result
+            useEffect(() => {
+                if (isSearchCurrent && nodeRef.current) {
+                    nodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, [isSearchCurrent]);
+
+            // Linkify bare URLs on blur
+            const handleBlur = (e) => {
+                const linked = linkifyHtml(e.currentTarget.innerHTML);
+                if (linked !== e.currentTarget.innerHTML) {
+                    e.currentTarget.innerHTML = linked;
+                    onUpdate(node.id, linked);
+                }
+            };
+
+            const handleInput = (e) => {
+                onUpdate(node.id, e.currentTarget.innerHTML);
+            };
+            
+            const handleKeyDown = (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    onIndent(node.id);
+                } else if (e.key === 'Enter' && e.shiftKey) {
+                    e.preventDefault();
+                    onAddSibling(node.id);
+                } else if (e.key === 'Enter' && !e.shiftKey) {
+                    // Insert <br> instead of letting the browser create <div>/<p> wrappers
+                    e.preventDefault();
+                    document.execCommand('insertLineBreak');
+                } else if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                    e.preventDefault();
+                    const allEditors = Array.from(document.querySelectorAll('.node-editor'));
+                    const currentIndex = allEditors.findIndex(el => el === editorRef.current);
+                    if (e.key === 'ArrowUp' && currentIndex > 0) {
+                        allEditors[currentIndex - 1].focus();
+                    } else if (e.key === 'ArrowDown' && currentIndex < allEditors.length - 1) {
+                        allEditors[currentIndex + 1].focus();
+                    }
+                }
+            };
+            
+            const handleDragStart = (e) => {
+                e.stopPropagation();
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(node.id));
+                onDragStart(node.id, depth, parentId);
+                e.currentTarget.closest('.outline-node').classList.add('dragging');
+            };
+
+            const handleDragOver = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
+                const rect = e.currentTarget.getBoundingClientRect();
+                const relativeY = e.clientY - rect.top;
+                const height = rect.height;
+                let zone;
+                if (relativeY < height * 0.33) zone = 'before';
+                else if (relativeY < height * 0.67) zone = 'child';
+                else zone = 'after';
+                onDragOver(node.id, zone, depth, parentId);
+            };
+            
+            const getDragClass = () => {
+                if (!isDragOver) return '';
+                if (dragOverZone === 'child') return 'drag-over-child';
+                if (dragOverZone === 'after') return 'drag-over-after';
+                return 'drag-over-before';
+            };
+            
+            return (
+                <div ref={nodeRef} className={`outline-node ${getDragClass()}`} style={{'--depth': depth}}>
+                    <div className="node-line" onDragOver={handleDragOver} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDrop(node.id); }}>
+                        <div className="drag-handle" draggable="true" onDragStart={handleDragStart} onDragEnd={onDragEnd}>⋮⋮</div>
+                        {numberingStyle !== 'default' && <div className="node-number">{nodeNumber}</div>}
+                        {hasChildren && <button className={`expand-btn ${isExpanded ? 'expanded' : 'collapsed'}`} onClick={() => onToggleExpand(node.id)} />}
+                        {!hasChildren && <div style={{width: '24px'}}></div>}
+                        <div className="node-content-wrapper">
+                            {node.type === 'image' ? (
+                                <div className="node-image-wrap">
+                                    <img
+                                        className="node-image"
+                                        src={node.src}
+                                        alt={node.alt || ''}
+                                        style={{width: node.width || 500, cursor: node.src && node.src.startsWith('data:image/svg') ? 'zoom-in' : 'default'}}
+                                        title={node.src && node.src.startsWith('data:image/svg') ? 'Double-click to open SVG in new tab' : undefined}
+                                        onDoubleClick={() => {
+                                            if (!node.src || !node.src.startsWith('data:image/svg')) return;
+                                            const [header, data] = node.src.split(',');
+                                            const isBase64 = header.includes('base64');
+                                            let blob;
+                                            if (isBase64) {
+                                                const bytes = atob(data);
+                                                const arr = new Uint8Array(bytes.length);
+                                                for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+                                                blob = new Blob([arr], { type: 'image/svg+xml' });
+                                            } else {
+                                                blob = new Blob([decodeURIComponent(data)], { type: 'image/svg+xml' });
+                                            }
+                                            const blobUrl = URL.createObjectURL(blob);
+                                            const tab = window.open(blobUrl, '_blank');
+                                            if (tab) setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                                        }}
+                                    />
+                                    <div className="node-image-controls">
+                                        <textarea
+                                            className="node-image-alt"
+                                            value={node.alt || ''}
+                                            onChange={(e) => onUpdateImageProps(node.id, { alt: e.target.value })}
+                                            placeholder="Alt text / caption"
+                                            rows="2"
+                                        />
+                                        <div className="node-image-size-row">
+                                            <span>W:</span>
+                                            <input
+                                                type="range"
+                                                className="node-image-resize"
+                                                min="80" max="900" step="10"
+                                                value={node.width || 500}
+                                                onChange={(e) => onUpdateImageProps(node.id, { width: parseInt(e.target.value) })}
+                                            />
+                                            <span>{node.width || 500}px</span>
+                                        </div>
+                                    </div>
+                                    <div className="node-actions">
+                                        <button className="action-btn" onClick={() => onDelete(node.id)}>Delete</button>
+                                        {index > 0 && <button className="action-btn" onClick={() => onMove(node.id, 'up')}>↑</button>}
+                                        {index < siblingCount - 1 && <button className="action-btn" onClick={() => onMove(node.id, 'down')}>↓</button>}
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                <div className="node-text-container">
+                                    {isClone && <div className="clone-indicator" title={`Clone - ${cloneCount} instances`}>⚡</div>}
+                                    <div
+                                        ref={editorRef}
+                                        className={`node-text node-editor${isSearchMatch ? ' search-match' : ''}${isSearchCurrent ? ' search-current' : ''}`}
+                                        contentEditable
+                                        suppressContentEditableWarning
+                                        onInput={handleInput}
+                                        onKeyDown={handleKeyDown}
+                                        onBlur={handleBlur}
+                                        data-node-id={node.id}
+                                        data-placeholder="Type here..."
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={(e) => e.preventDefault()}
+                                    />
+                                </div>
+                                {showComments && node.comment && node.comment !== '' && (
+                                    commentEditing ? (
+                                        <textarea
+                                            className="node-comment"
+                                            value={node.comment}
+                                            onChange={(e) => onUpdateComment(node.id, e.target.value)}
+                                            placeholder="Comment..."
+                                            rows="2"
+                                            autoFocus
+                                            onBlur={() => setCommentEditing(false)}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={(e) => e.preventDefault()}
+                                        />
+                                    ) : (
+                                        <div
+                                            className="node-comment-view"
+                                            onClick={(e) => { if (e.target.tagName !== 'A') setCommentEditing(true); }}
+                                            dangerouslySetInnerHTML={{ __html: linkifyText(node.comment) }}
+                                        />
+                                    )
+                                )}
+                                <div className="node-actions">
+                                    <button className="action-btn" onClick={() => onAddChild(node.id)}>+ Child</button>
+                                    {(!node.comment || node.comment === '') && <button className="action-btn" onClick={() => onAddComment(node.id)}>+ Comment</button>}
+                                    {node.comment && node.comment !== '' && <button className="action-btn" onClick={() => onUpdateComment(node.id, '')}>− Comment</button>}
+                                    <button className="action-btn clone-btn" onClick={() => onClone(node.id)}>⚡ Clone</button>
+                                    {onHoist && node.children && node.children.length > 0 && <button className="action-btn" onClick={() => onHoist(node.id)} title="Focus on this subtree">⬆ Hoist</button>}
+                                    <button className="action-btn" onClick={() => onDelete(node.id)}>Delete</button>
+                                    {depth > 0 && <button className="action-btn" onClick={() => onOutdent(node.id)}>← Outdent</button>}
+                                    {index > 0 && <button className="action-btn" onClick={() => onMove(node.id, 'up')}>↑</button>}
+                                    {index < siblingCount - 1 && <button className="action-btn" onClick={() => onMove(node.id, 'down')}>↓</button>}
+                                </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    {hasChildren && isExpanded && (
+                        <div>
+                            {node.children.map((child, idx) => (
+                                <OutlineNode key={child.id} node={child} depth={depth + 1} index={idx} siblingCount={node.children.length} numberPrefix={numberingStyle === 'numbered' ? `${nodeNumber}.` : ''} parentId={node.id} onUpdate={onUpdate} onUpdateComment={onUpdateComment} onUpdateImageProps={onUpdateImageProps} onAddChild={onAddChild} onAddComment={onAddComment} onAddSibling={onAddSibling} onDelete={onDelete} onClone={onClone} onMove={onMove} onIndent={onIndent} onOutdent={onOutdent} showComments={showComments} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} expanded={expanded} onToggleExpand={onToggleExpand} numberingStyle={numberingStyle} clones={clones} dragOverId={dragOverId} dragOverZone={dragOverZone} onHoist={onHoist} searchMatchIds={searchMatchIds} searchCurrentId={searchCurrentId} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        
+        const LS_KEY = 'rcn-outliner';
+
+        // Migrate plain-text markdown markers to HTML (runs once on load)
+        const migrateText = (text) => {
+            if (!text || text.includes('<b>') || text.includes('<strong>') || text.includes('<em>') || text.includes('<u>')) return text;
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>');
+        };
+        const migrateNodes = (nodes) => nodes.map(node => ({
+            ...node,
+            text: migrateText(node.text),
+            children: node.children ? migrateNodes(node.children) : []
+        }));
+
+        const loadFromLocalStorage = () => {
+            try {
+                const saved = localStorage.getItem(LS_KEY);
+                if (!saved) return null;
+                const data = JSON.parse(saved);
+                if (data.outline) data.outline = migrateNodes(data.outline);
+                return data;
+            } catch(e) { return null; }
+        };
+
+        const lsData = loadFromLocalStorage();
+
+        function App() {
+            const titleRef = useRef(null);
+            const [outline, setOutline] = useState(lsData ? lsData.outline : initialOutline);
+            const [history, setHistory] = useState([JSON.parse(JSON.stringify(lsData ? lsData.outline : initialOutline))]);
+            const [historyIndex, setHistoryIndex] = useState(0);
+            const [nextId, setNextId] = useState(lsData ? (lsData.nextId || 12) : 12);
+            const [nextCloneId, setNextCloneId] = useState(lsData ? (lsData.nextCloneId || 1) : 1);
+            const [presentationMode, setPresentationMode] = useState(false);
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const [presentationDepth, setPresentationDepth] = useState(2);
+            const [style, setStyle] = useState(lsData ? (lsData.style || 'default') : 'default');
+            const [font, setFont] = useState(lsData ? (lsData.font || 'mono') : 'mono');
+            const [spacing, setSpacing] = useState(lsData ? (lsData.spacing || 'normal') : 'normal');
+            const [customSpacing, setCustomSpacing] = useState(lsData ? (lsData.customSpacing || false) : false);
+            const [showComments, setShowComments] = useState(lsData ? (lsData.showComments !== undefined ? lsData.showComments : true) : true);
+            const [showColorPicker, setShowColorPicker] = useState(false);
+            const [lastFontColor, setLastFontColor] = useState('#000000');
+            const colorPickerRef = useRef(null);
+            const savedRangeRef = useRef(null);
+            const [title, setTitle] = useState(lsData ? (lsData.title || 'TITLE') : 'TITLE');
+            const [nodeMargin, setNodeMargin] = useState(lsData ? (lsData.nodeMargin || 0) : 0);
+            const [textPadding, setTextPadding] = useState(lsData ? (lsData.textPadding !== undefined ? lsData.textPadding : 1) : 1);
+            const [lineHeight, setLineHeight] = useState(lsData ? (lsData.lineHeight || 1.0) : 1.0);
+            const [expanded, setExpanded] = useState(lsData ? (lsData.expanded || {}) : {});
+            const [hoistPath, setHoistPath] = useState([]);
+            const [draggedNodeId, setDraggedNodeId] = useState(null);
+            const [draggedDepth, setDraggedDepth] = useState(0);
+            const [draggedParentId, setDraggedParentId] = useState(null);
+            const [dragOverNodeId, setDragOverNodeId] = useState(null);
+            const [dragOverZone, setDragOverZone] = useState('before');
+            const [dragOverDepth, setDragOverDepth] = useState(0);
+            const [dragOverParentId, setDragOverParentId] = useState(null);
+            const [dropZoneActive, setDropZoneActive] = useState(false);
+            const [clones, setClones] = useState(lsData ? (lsData.clones || {}) : {});
+            const [savedMeta, setSavedMeta] = useState(lsData ? { at: lsData.savedAt || null, location: lsData.savedLocation || null } : { at: null, location: null });
+            const dropZoneRef = useRef(null);
+            const [searchActive, setSearchActive] = useState(false);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [searchIdx, setSearchIdx] = useState(0);
+            const searchInputRef = useRef(null);
+
+            useEffect(() => {
+                if (titleRef.current) {
+                    titleRef.current.style.height = 'auto';
+                    titleRef.current.style.height = titleRef.current.scrollHeight + 'px';
+                }
+            }, [title]);
+            
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    // Check for Command-Z (Mac) or Ctrl-Z (Windows/Linux)
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+                        e.preventDefault();
+                        undo();
+                    }
+                    // Check for Shift-Command-Z (Mac) or Ctrl-Shift-Z (Windows/Linux)
+                    else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+                        e.preventDefault();
+                        redo();
+                    }
+                    // Cmd/Ctrl+F to open search
+                    else if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+                        e.preventDefault();
+                        setSearchActive(true);
+                        setTimeout(() => searchInputRef.current?.focus(), 50);
+                    }
+                };
+                
+                document.addEventListener('keydown', handleKeyDown);
+                return () => document.removeEventListener('keydown', handleKeyDown);
+            }, [historyIndex, history]);
+            
+            const autosaveRef = useRef(null);
+
+            const persistToLocalStorage = (newOutline, overrides = {}) => {
+                try {
+                    const data = {
+                        outline: newOutline,
+                        expanded: overrides.expanded !== undefined ? overrides.expanded : expanded,
+                        style: overrides.style !== undefined ? overrides.style : style,
+                        font: overrides.font !== undefined ? overrides.font : font,
+                        spacing: overrides.spacing !== undefined ? overrides.spacing : spacing,
+                        customSpacing: overrides.customSpacing !== undefined ? overrides.customSpacing : customSpacing,
+                        showComments: overrides.showComments !== undefined ? overrides.showComments : showComments,
+                        title: overrides.title !== undefined ? overrides.title : title,
+                        nodeMargin: overrides.nodeMargin !== undefined ? overrides.nodeMargin : nodeMargin,
+                        textPadding: overrides.textPadding !== undefined ? overrides.textPadding : textPadding,
+                        lineHeight: overrides.lineHeight !== undefined ? overrides.lineHeight : lineHeight,
+                        nextId: overrides.nextId !== undefined ? overrides.nextId : nextId,
+                        nextCloneId: overrides.nextCloneId !== undefined ? overrides.nextCloneId : nextCloneId,
+                        clones: overrides.clones !== undefined ? overrides.clones : clones,
+                    };
+                    localStorage.setItem(LS_KEY, JSON.stringify(data));
+                } catch(e) {}
+            };
+
+            // Autosave settings changes (font, spacing, etc.)
+            useEffect(() => { persistToLocalStorage(outline); }, [style, font, spacing, customSpacing, showComments, title, nodeMargin, textPadding, lineHeight, expanded]);
+
+            const saveToHistory = (newOutline) => {
+                const newHistory = history.slice(0, historyIndex + 1);
+                newHistory.push(JSON.parse(JSON.stringify(newOutline)));
+                if (newHistory.length > 10) newHistory.shift();
+                setHistory(newHistory);
+                setHistoryIndex(newHistory.length - 1);
+                setOutline(newOutline);
+                persistToLocalStorage(newOutline);
+            };
+            
+            const undo = () => {
+                if (historyIndex > 0) {
+                    setHistoryIndex(historyIndex - 1);
+                    setOutline(JSON.parse(JSON.stringify(history[historyIndex - 1])));
+                }
+            };
+            
+            const redo = () => {
+                if (historyIndex < history.length - 1) {
+                    setHistoryIndex(historyIndex + 1);
+                    setOutline(JSON.parse(JSON.stringify(history[historyIndex + 1])));
+                }
+            };
+            
+            const findNode = (nodes, id) => {
+                for (let node of nodes) {
+                    if (node.id === id) return node;
+                    if (node.children) {
+                        const found = findNode(node.children, id);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+            
+            const updateNodeComment = (id, commentText) => {
+                const updateNode = (nodes) => nodes.map(node => {
+                    if (node.id === id) return { ...node, comment: commentText };
+                    if (node.children) return { ...node, children: updateNode(node.children) };
+                    return node;
+                });
+                saveToHistory(updateNode(outline));
+            };
+            
+            const addComment = (id) => {
+                updateNodeComment(id, 'Comment text...');
+            };
+            
+            const updateNodeText = (id, text) => {
+                const updateNode = (nodes) => nodes.map(node => {
+                    if (node.id === id) return { ...node, text };
+                    if (node.children) return { ...node, children: updateNode(node.children) };
+                    return node;
+                });
+                let newOutline = updateNode(outline);
+                const updatedNode = findNode(newOutline, id);
+                if (updatedNode && updatedNode.cloneId !== null) {
+                    const updateAllClones = (nodes) => nodes.map(node => {
+                        if (node.cloneId === updatedNode.cloneId) return { ...node, text };
+                        if (node.children) return { ...node, children: updateAllClones(node.children) };
+                        return node;
+                    });
+                    newOutline = updateAllClones(newOutline);
+                }
+                saveToHistory(newOutline);
+            };
+            
+            // ── Hoist helpers ─────────────────────────────────────────────
+            const hoistNode = (id) => {
+                const findPath = (nodes, targetId, path = []) => {
+                    for (let node of nodes) {
+                        if (node.id === targetId) return [...path, node];
+                        if (node.children) {
+                            const found = findPath(node.children, targetId, [...path, node]);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                const path = findPath(outline, id);
+                if (path) setHoistPath(path.map(n => ({ id: n.id, text: n.text })));
+            };
+
+            const dehoistTo = (idx) => {
+                setHoistPath(hoistPath.slice(0, idx + 1));
+            };
+
+            const dehoist = () => setHoistPath([]);
+
+            const hoistedNode = hoistPath.length > 0
+                ? findNode(outline, hoistPath[hoistPath.length - 1].id)
+                : null;
+            const visibleOutline = hoistedNode ? hoistedNode.children : outline;
+
+            // ── Markdown export ────────────────────────────────────────────
+            const exportToMarkdown = () => {
+                const walk = (nodes, depth) => {
+                    return nodes.map(node => {
+                        if (node.type === 'image') {
+                            return `![${node.alt || ''}](${node.src.length < 300 ? node.src : node.alt || 'image'})`;
+                        }
+                        const text = htmlToMarkdown(node.text);
+                        let line;
+                        if (depth === 0) line = `# ${text}`;
+                        else if (depth === 1) line = `## ${text}`;
+                        else if (depth === 2) line = `### ${text}`;
+                        else line = `${'  '.repeat(depth - 3)}- ${text}`;
+                        let block = line;
+                        if (node.comment && node.comment.trim()) {
+                            block += `\n> ${node.comment.trim()}`;
+                        }
+                        if (node.children && node.children.length > 0) {
+                            block += '\n' + walk(node.children, depth + 1);
+                        }
+                        return block;
+                    }).join('\n\n');
+                };
+                const md = `# ${title}\n\n` + walk(outline, 0);
+                const blob = new Blob([md], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${title.toLowerCase().replace(/\s+/g, '-') || 'outline'}-${Date.now()}.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            // ── Rich text (HTML) export ────────────────────────────────────
+            const exportToHTML = () => {
+                const walk = (nodes, depth) => {
+                    return nodes.map(node => {
+                        if (node.type === 'image') {
+                            return `<figure style="margin:1rem 0 1rem ${depth * 1.5}rem"><img src="${node.src}" alt="${node.alt || ''}" style="max-width:${node.width || 500}px;max-width:100%;border:1px solid #ccc"/>${node.alt ? `<figcaption style="font-size:0.8rem;color:#6b6355;margin-top:0.3rem">${node.alt}</figcaption>` : ''}</figure>`;
+                        }
+                        const tag = depth === 0 ? 'h1' : depth === 1 ? 'h2' : depth === 2 ? 'h3' : 'p';
+                        const indent = depth > 2 ? `style="margin-left:${(depth - 2) * 1.5}rem"` : '';
+                        let html = `<${tag} ${indent}>${node.text}</${tag}>`;
+                        if (node.comment && node.comment.trim()) {
+                            html += `<p style="margin-left:${(depth + 1) * 1.5}rem;color:#6b6355;font-style:italic;border-left:3px solid #6b6355;padding-left:0.75rem">${node.comment.trim()}</p>`;
+                        }
+                        if (node.children && node.children.length > 0) {
+                            html += walk(node.children, depth + 1);
+                        }
+                        return html;
+                    }).join('\n');
+                };
+                const body = walk(outline, 0);
+                const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 800px; margin: 3rem auto; padding: 0 2rem; color: #2c2416; line-height: 1.6; }
+  h1 { font-size: 2.2rem; color: #d4622f; border-bottom: 3px solid #d4622f; padding-bottom: 0.5rem; }
+  h2 { font-size: 1.5rem; color: #d4622f; margin-top: 2rem; }
+  h3 { font-size: 1.2rem; color: #6b6355; margin-top: 1.5rem; }
+  p { margin: 0.5rem 0; }
+</style>
+</head>
+<body>
+<h1 style="font-size:2.8rem;border-bottom:4px solid #d4622f;padding-bottom:0.75rem">${title}</h1>
+${body}
+</body>
+</html>`;
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${title.toLowerCase().replace(/\s+/g, '-') || 'outline'}-${Date.now()}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            // ── FedWiki export ─────────────────────────────────────────────
+            const buildFedWikiPage = (expandedState) => {
+                // Build a single html item using <details>/<summary> for collapsible nodes.
+                // expandedState: object where expandedState[id] !== false means expanded.
+                const useCollapsible = expandedState != null;
+
+                const buildHtml = (nodes, depth) => {
+                    let html = '';
+                    nodes.forEach(node => {
+                        const text = node.text || '';
+                        const comment = node.comment && node.comment.trim()
+                            ? `<div style="margin:0.2rem 0 0.2rem 1.5rem;color:#6b6355;font-style:italic;border-left:3px solid #6b6355;padding-left:0.5rem;font-size:0.9em">${node.comment.trim()}</div>`
+                            : '';
+                        const hasChildren = node.children && node.children.length > 0;
+                        if (useCollapsible && hasChildren) {
+                            const isOpen = expandedState[node.id] !== false;
+                            html += `<details${isOpen ? ' open' : ''} style="margin-left:${depth * 1.2}rem"><summary style="cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:0.4rem"><span style="font-size:0.7em;color:#888">▶</span>${depth === 0 ? `<strong>${text}</strong>` : text}</summary>${comment}${buildHtml(node.children, 0)}</details>`;
+                        } else {
+                            html += `<div style="margin-left:${depth * 1.2}rem;padding:1px 0">${depth === 0 ? `<strong>${text}</strong>` : text}</div>${comment}`;
+                            if (hasChildren) html += buildHtml(node.children, depth + 1);
+                        }
+                    });
+                    return html;
+                };
+
+                const htmlBody = buildHtml(outline, 0);
+                const story = [{
+                    type: 'html',
+                    id: 'outline-' + Date.now(),
+                    text: `<div style="font-family:system-ui,sans-serif;font-size:0.9em;line-height:1.5">${htmlBody}</div>`
+                }];
+
+                return {
+                    title: title,
+                    story: story,
+                    journal: [{ type: 'create', item: { title: title }, date: Date.now() }]
+                };
+            };
+
+            const exportToFedWiki = () => {
+                const page = buildFedWikiPage(null);
+                const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'outline';
+                const blob = new Blob([JSON.stringify(page, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${slug}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            const sendToWiki = () => {
+                const page = buildFedWikiPage(expanded);
+                if (window.opener) {
+                    window.opener.postMessage({ toolType: 'rcn-outliner', action: 'showResult', page }, '*');
+                    window.opener.focus();
+                } else {
+                    alert('Not running as a wiki popup. Use Export FedWiki to download instead.');
+                }
+            };
+
+            const sendToWikiItem = () => {
+                if (!window.opener) { alert('Not running as wiki popup — use → Wiki Ghost for ghost page'); return; }
+                window.opener.postMessage({ toolType: 'rcn-outliner', action: 'saveOutline', outline, title }, '*');
+                window.opener.focus();
+            };
+
+            const formatText = (command) => {
+                document.execCommand(command, false, null);
+            };
+
+            // MS Word-aligned palette: grays/theme + Word standard colors
+            const FONT_COLORS = [
+                '#000000','#404040','#7F7F7F','#BFBFBF','#D9D9D9','#FFFFFF','#4472C4','#ED7D31','#70AD47','#4BACC6',
+                '#C00000','#FF0000','#FFC000','#FFFF00','#92D050','#00B050','#00B0F0','#0070C0','#002060','#7030A0'
+            ];
+
+            const applyColor = (color) => {
+                document.execCommand('foreColor', false, color);
+                setLastFontColor(color);
+                setShowColorPicker(false);
+            };
+
+            const saveSelBeforeCustomPick = () => {
+                const sel = window.getSelection();
+                if (sel && sel.rangeCount > 0) savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+            };
+
+            const applyCustomColor = (color) => {
+                if (savedRangeRef.current) {
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(savedRangeRef.current);
+                }
+                document.execCommand('foreColor', false, color);
+                setLastFontColor(color);
+                setShowColorPicker(false);
+            };
+
+            useEffect(() => {
+                if (!showColorPicker) return;
+                const handler = (e) => {
+                    if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
+                        setShowColorPicker(false);
+                    }
+                };
+                document.addEventListener('mousedown', handler);
+                return () => document.removeEventListener('mousedown', handler);
+            }, [showColorPicker]);
+
+            // Opener handshake — signal ready, listen for loadOutline
+            useEffect(() => {
+                if (!window.opener) return;
+                window.opener.postMessage({ toolType: 'rcn-outliner', action: 'outlinerReady' }, '*');
+                const handler = (ev) => {
+                    if (!ev.source || ev.source !== window.opener) return;
+                    if (ev.data && ev.data.action === 'loadOutline') {
+                        if (ev.data.outline) { setOutline(ev.data.outline); saveToHistory(ev.data.outline); }
+                        if (ev.data.title) setTitle(ev.data.title);
+                    }
+                };
+                window.addEventListener('message', handler);
+                return () => window.removeEventListener('message', handler);
+            }, []);
+
+            const stripHtml = (html) => html
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>');
+
+            const htmlToMarkdown = (html) => html
+                .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
+                .replace(/<b>(.*?)<\/b>/gi, '**$1**')
+                .replace(/<em>(.*?)<\/em>/gi, '*$1*')
+                .replace(/<i>(.*?)<\/i>/gi, '*$1*')
+                .replace(/<u>(.*?)<\/u>/gi, '$1')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>');
+
+            // ── Search ─────────────────────────────────────────────────────
+            const searchMatches = useMemo(() => {
+                if (!searchQuery.trim()) return [];
+                const q = searchQuery.toLowerCase();
+                const results = [];
+                const walk = (nodes) => {
+                    nodes.forEach(node => {
+                        if (node.type !== 'image') {
+                            if (stripForSearch(node.text).toLowerCase().includes(q) ||
+                                (node.comment || '').toLowerCase().includes(q)) {
+                                results.push(node.id);
+                            }
+                        }
+                        if (node.children) walk(node.children);
+                    });
+                };
+                walk(outline);
+                return results;
+            }, [searchQuery, outline]);
+
+            const searchMatchIds = useMemo(() => new Set(searchMatches), [searchMatches]);
+            const searchCurrentId = searchMatches.length > 0 ? searchMatches[searchIdx % searchMatches.length] : null;
+
+            // Reset index when query changes
+            useEffect(() => { setSearchIdx(0); }, [searchQuery]);
+
+            // Expand all when a search is active so matches are reachable
+            useEffect(() => {
+                if (!searchQuery.trim() || searchMatches.length === 0) return;
+                const allExpanded = {};
+                const markExpanded = (nodes) => nodes.forEach(n => {
+                    if (n.children && n.children.length > 0) {
+                        allExpanded[n.id] = true;
+                        markExpanded(n.children);
+                    }
+                });
+                markExpanded(outline);
+                setExpanded(prev => ({ ...prev, ...allExpanded }));
+            }, [searchQuery, searchMatches]);
+
+            const printOutline = () => {
+                window.print();
+            };
+            
+            const doSave = (location) => {
+                const now = new Date().toISOString();
+                const data = {
+                    outline: outline,
+                    expanded: expanded,
+                    style: style,
+                    font: font,
+                    spacing: spacing,
+                    customSpacing: customSpacing,
+                    showComments: showComments,
+                    title: title,
+                    nodeMargin: nodeMargin,
+                    textPadding: textPadding,
+                    lineHeight: lineHeight,
+                    nextId: nextId,
+                    nextCloneId: nextCloneId,
+                    clones: clones,
+                    savedAt: now,
+                    savedLocation: location || null
+                };
+                setSavedMeta({ at: now, location: location || null });
+                const json = JSON.stringify(data, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${title.toLowerCase().replace(/\s+/g, '-') || 'more-outline'}-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            const saveOutline = () => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => doSave({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) }),
+                        () => doSave(null),
+                        { timeout: 5000 }
+                    );
+                } else {
+                    doSave(null);
+                }
+            };
+            
+            const loadOutline = () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+                            
+                            if (data.outline) {
+                                setOutline(data.outline);
+                                saveToHistory(data.outline);
+                            }
+                            if (data.expanded) setExpanded(data.expanded);
+                            if (data.style) setStyle(data.style);
+                            if (data.font) setFont(data.font);
+                            if (data.spacing) setSpacing(data.spacing);
+                            if (data.customSpacing !== undefined) setCustomSpacing(data.customSpacing);
+                            if (data.showComments !== undefined) setShowComments(data.showComments);
+                            if (data.title) setTitle(data.title);
+                            if (data.nodeMargin !== undefined) setNodeMargin(data.nodeMargin);
+                            if (data.textPadding !== undefined) setTextPadding(data.textPadding);
+                            if (data.lineHeight !== undefined) setLineHeight(data.lineHeight);
+                            if (data.nextId) setNextId(data.nextId);
+                            if (data.nextCloneId) setNextCloneId(data.nextCloneId);
+                            if (data.clones) setClones(data.clones);
+                            setSavedMeta({ at: data.savedAt || null, location: data.savedLocation || null });
+
+                            alert('Outline loaded successfully!');
+                        } catch (error) {
+                            alert('Error loading file: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            };
+
+            const processImageFile = (file, insertFn) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const src = ev.target.result;
+                    const sizeMB = (src.length * 0.75 / 1024 / 1024).toFixed(1);
+                    if (parseFloat(sizeMB) > 1 && !confirm(`"${file.name}" is ~${sizeMB} MB. Large images increase save file size. Continue?`)) return;
+                    insertFn(src, file.name);
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const insertImageNode = () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    processImageFile(file, (src, name) => {
+                        const newNode = { id: nextId, type: 'image', src, alt: name, width: 500, cloneId: null, comment: '', children: [] };
+                        setNextId(nextId + 1);
+                        saveToHistory([...outline, newNode]);
+                    });
+                };
+                input.click();
+            };
+
+            const updateImageNode = (id, props) => {
+                const update = (nodes) => nodes.map(node => {
+                    if (node.id === id) return { ...node, ...props };
+                    if (node.children) return { ...node, children: update(node.children) };
+                    return node;
+                });
+                saveToHistory(update(outline));
+            };
+
+            const handleEditorAreaDrop = (e) => {
+                const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+                if (files.length === 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                processImageFile(files[0], (src, name) => {
+                    const newNode = { id: nextId, type: 'image', src, alt: name, width: 500, cloneId: null, comment: '', children: [] };
+                    setNextId(nextId + 1);
+                    saveToHistory([...outline, newNode]);
+                });
+            };
+
+            const newDocument = () => {
+                const hasContent = outline.length > 1 || 
+                    (outline.length === 1 && outline[0].text !== 'Welcome to MORE Outliner');
+                
+                if (hasContent) {
+                    const shouldSave = window.confirm('Save current document before creating a new one?');
+                    if (shouldSave) {
+                        saveOutline();
+                    }
+                }
+                
+                const newOutline = [
+                    { id: 1, text: 'New Document', cloneId: null, comment: '', children: [
+                        { id: 2, text: 'Start typing here...', cloneId: null, comment: '', children: [] }
+                    ]}
+                ];
+                
+                setOutline(newOutline);
+                setHistory([JSON.parse(JSON.stringify(newOutline))]);
+                setHistoryIndex(0);
+                setNextId(3);
+                setNextCloneId(1);
+                setExpanded({});
+                setClones({});
+                setTitle('TITLE');
+                setStyle('default');
+                setFont('mono');
+                setSpacing('normal');
+                setCustomSpacing(false);
+                setNodeMargin(0);
+                setTextPadding(1);
+                setLineHeight(1.0);
+                setHoistPath([]);
+                try { localStorage.removeItem(LS_KEY); } catch(e) {}
+            };
+            
+            const exportToOPML = () => {
+                const escapeXml = (str) => {
+                    return str.replace(/&/g, '&amp;')
+                              .replace(/</g, '&lt;')
+                              .replace(/>/g, '&gt;')
+                              .replace(/"/g, '&quot;')
+                              .replace(/'/g, '&apos;');
+                };
+                
+                const buildOutline = (nodes, depth = 0) => {
+                    return nodes.map(node => {
+                        const hasChildren = node.children && node.children.length > 0;
+                        const indent = '  '.repeat(depth + 2);
+                        let xml = `${indent}<outline text="${escapeXml(stripHtml(node.text))}"`;
+                        if (node.cloneId !== null) xml += ` _note="clone:${node.cloneId}"`;
+                        
+                        if (hasChildren) {
+                            xml += '>\n';
+                            xml += buildOutline(node.children, depth + 1);
+                            xml += `${indent}</outline>\n`;
+                        } else {
+                            xml += '/>\n';
+                        }
+                        return xml;
+                    }).join('');
+                };
+                
+                const now = new Date();
+                const dateStr = now.toUTCString();
+                
+                const opml = `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>MORE Outliner Document</title>
+    <dateCreated>${dateStr}</dateCreated>
+    <dateModified>${dateStr}</dateModified>
+    <ownerName>MORE Outliner</ownerName>
+  </head>
+  <body>
+${buildOutline(outline)}  </body>
+</opml>`;
+                
+                const blob = new Blob([opml], { type: 'text/xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `outline-${Date.now()}.opml`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+            
+            const addChild = (parentId) => {
+                const addToNode = (nodes) => nodes.map(node => {
+                    if (node.id === parentId) {
+                        const newChild = { id: nextId, text: 'New item', cloneId: null, comment: '', children: [] };
+                        setNextId(nextId + 1);
+                        return { ...node, children: [...node.children, newChild] };
+                    }
+                    if (node.children) return { ...node, children: addToNode(node.children) };
+                    return node;
+                });
+                const newOutline = addToNode(outline);
+                saveToHistory(newOutline);
+                setExpanded({ ...expanded, [parentId]: true });
+            };
+            
+            const addSibling = (nodeId) => {
+                const newNodeId = nextId;
+                
+                const addSiblingAfter = (nodes) => {
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (nodes[i].id === nodeId) {
+                            const newNode = { id: newNodeId, text: '', cloneId: null, comment: '', children: [] };
+                            return [...nodes.slice(0, i + 1), newNode, ...nodes.slice(i + 1)];
+                        }
+                        if (nodes[i].children) {
+                            const result = addSiblingAfter(nodes[i].children);
+                            if (result !== nodes[i].children) {
+                                return nodes.map((n, idx) => idx === i ? { ...n, children: result } : n);
+                            }
+                        }
+                    }
+                    return nodes;
+                };
+                
+                setNextId(nextId + 1);
+                const newOutline = addSiblingAfter(outline);
+                saveToHistory(newOutline);
+                
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        const newEditor = document.querySelector(`[data-node-id="${newNodeId}"]`);
+                        if (newEditor) {
+                            newEditor.focus();
+                        }
+                    }, 100);
+                });
+            };
+            
+            const deleteNode = (id) => {
+                const removeNode = (nodes) => nodes.filter(node => node.id !== id).map(node => {
+                    if (node.children) return { ...node, children: removeNode(node.children) };
+                    return node;
+                });
+                saveToHistory(removeNode(outline));
+            };
+            
+            const cloneNode = (id) => {
+                const findNodeWithPath = (nodes, id, path = []) => {
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (nodes[i].id === id) return { node: nodes[i], path: [...path, i] };
+                        if (nodes[i].children) {
+                            const found = findNodeWithPath(nodes[i].children, id, [...path, i]);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                const result = findNodeWithPath(outline, id);
+                if (!result) return;
+                const { node: nodeToClone, path } = result;
+                let cloneId = nodeToClone.cloneId;
+                let newOutline = outline;
+                if (cloneId === null) {
+                    cloneId = nextCloneId;
+                    setNextCloneId(nextCloneId + 1);
+                    const markAsClone = (nodes) => nodes.map(node => {
+                        if (node.id === id) return { ...node, cloneId };
+                        if (node.children) return { ...node, children: markAsClone(node.children) };
+                        return node;
+                    });
+                    newOutline = markAsClone(outline);
+                }
+                const deepClone = (node, parentCloneId) => {
+                    const newId = nextId + Math.random();
+                    return { id: newId, text: node.text, cloneId: parentCloneId, children: node.children.map(child => deepClone(child, null)) };
+                };
+                const clonedNode = deepClone(nodeToClone, cloneId);
+                clonedNode.id = nextId;
+                setNextId(nextId + 1);
+                const insertCloneAfter = (nodes, targetPath, clone) => {
+                    if (targetPath.length === 1) {
+                        const idx = targetPath[0];
+                        return [...nodes.slice(0, idx + 1), clone, ...nodes.slice(idx + 1)];
+                    }
+                    const [first, ...rest] = targetPath;
+                    return nodes.map((node, idx) => {
+                        if (idx === first && node.children) return { ...node, children: insertCloneAfter(node.children, rest, clone) };
+                        return node;
+                    });
+                };
+                newOutline = insertCloneAfter(newOutline, path, clonedNode);
+                saveToHistory(newOutline);
+                const newClones = { ...clones };
+                if (!newClones[cloneId]) newClones[cloneId] = [id];
+                newClones[cloneId].push(clonedNode.id);
+                setClones(newClones);
+            };
+            
+            const moveNode = (id, direction) => {
+                const moveInArray = (nodes) => {
+                    const idx = nodes.findIndex(n => n.id === id);
+                    if (idx === -1) return nodes.map(node => ({ ...node, children: node.children ? moveInArray(node.children) : [] }));
+                    const newNodes = [...nodes];
+                    if (direction === 'up' && idx > 0) [newNodes[idx], newNodes[idx - 1]] = [newNodes[idx - 1], newNodes[idx]];
+                    else if (direction === 'down' && idx < nodes.length - 1) [newNodes[idx], newNodes[idx + 1]] = [newNodes[idx + 1], newNodes[idx]];
+                    return newNodes;
+                };
+                saveToHistory(moveInArray(outline));
+            };
+            
+            const indentNode = (id) => {
+                const indentInTree = (nodes, targetId) => {
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (nodes[i].id === targetId && i > 0) {
+                            const nodeToIndent = nodes[i];
+                            const newParent = nodes[i - 1];
+                            return [
+                                ...nodes.slice(0, i - 1),
+                                { ...newParent, children: [...newParent.children, nodeToIndent] },
+                                ...nodes.slice(i + 1)
+                            ];
+                        }
+                        if (nodes[i].children) {
+                            const result = indentInTree(nodes[i].children, targetId);
+                            if (result !== nodes[i].children) {
+                                return [...nodes.slice(0, i), { ...nodes[i], children: result }, ...nodes.slice(i + 1)];
+                            }
+                        }
+                    }
+                    return nodes;
+                };
+                const newOutline = indentInTree(outline, id);
+                if (newOutline !== outline) {
+                    saveToHistory(newOutline);
+                    const node = findNode(newOutline, id);
+                    if (node) {
+                        const findParent = (nodes, targetId) => {
+                            for (let node of nodes) {
+                                if (node.children && node.children.some(c => c.id === targetId)) return node.id;
+                                if (node.children) {
+                                    const found = findParent(node.children, targetId);
+                                    if (found) return found;
+                                }
+                            }
+                            return null;
+                        };
+                        const parentId = findParent(newOutline, id);
+                        if (parentId) setExpanded({ ...expanded, [parentId]: true });
+                    }
+                }
+            };
+            
+            const outdentNode = (id) => {
+                // Returns updated nodes array with the target promoted one level,
+                // or null if not found at this level or below.
+                const tryOutdent = (nodes) => {
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (!nodes[i].children) continue;
+                        const childIdx = nodes[i].children.findIndex(c => c.id === id);
+                        if (childIdx !== -1) {
+                            // Found: remove from this parent's children, insert after this parent.
+                            const nodeToOutdent = nodes[i].children[childIdx];
+                            const updatedParent = {
+                                ...nodes[i],
+                                children: [
+                                    ...nodes[i].children.slice(0, childIdx),
+                                    ...nodes[i].children.slice(childIdx + 1)
+                                ]
+                            };
+                            return [
+                                ...nodes.slice(0, i),
+                                updatedParent,
+                                nodeToOutdent,
+                                ...nodes.slice(i + 1)
+                            ];
+                        }
+                        // Not a direct child — recurse deeper.
+                        const result = tryOutdent(nodes[i].children);
+                        if (result !== null) {
+                            return nodes.map((n, idx) => idx === i ? { ...n, children: result } : n);
+                        }
+                    }
+                    return null;
+                };
+                const newOutline = tryOutdent(outline);
+                if (newOutline !== null) saveToHistory(newOutline);
+            };
+            
+            const handleDrop = (targetNodeId) => {
+                if (!draggedNodeId) {
+                    setDragOverNodeId(null);
+                    setDropZoneActive(false);
+                    return;
+                }
+                
+                const findAndRemoveNode = (nodes, id) => {
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (nodes[i].id === id) return { node: nodes[i], newNodes: nodes.filter((_, idx) => idx !== i) };
+                        if (nodes[i].children) {
+                            const result = findAndRemoveNode(nodes[i].children, id);
+                            if (result) return { node: result.node, newNodes: nodes.map((n, idx) => idx === i ? { ...n, children: result.newNodes } : n) };
+                        }
+                    }
+                    return null;
+                };
+                
+                const insertNodeBefore = (nodes, targetId, nodeToInsert) => {
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (nodes[i].id === targetId) return [...nodes.slice(0, i), nodeToInsert, ...nodes.slice(i)];
+                        if (nodes[i].children) {
+                            const result = insertNodeBefore(nodes[i].children, targetId, nodeToInsert);
+                            if (result !== nodes[i].children) return nodes.map((n, idx) => idx === i ? { ...n, children: result } : n);
+                        }
+                    }
+                    return nodes;
+                };
+                
+                const insertAsChild = (nodes, targetId, nodeToInsert) => nodes.map(node => {
+                    if (node.id === targetId) return { ...node, children: [...node.children, nodeToInsert] };
+                    if (node.children) return { ...node, children: insertAsChild(node.children, targetId, nodeToInsert) };
+                    return node;
+                });
+                
+                const insertAfterParent = (nodes, parentId, nodeToInsert) => {
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (nodes[i].id === parentId) return [...nodes.slice(0, i + 1), nodeToInsert, ...nodes.slice(i + 1)];
+                        if (nodes[i].children) {
+                            const result = insertAfterParent(nodes[i].children, parentId, nodeToInsert);
+                            if (result !== nodes[i].children) return nodes.map((n, idx) => idx === i ? { ...n, children: result } : n);
+                        }
+                    }
+                    return nodes;
+                };
+                
+                if (draggedNodeId === targetNodeId) {
+                    setDraggedNodeId(null);
+                    setDragOverNodeId(null);
+                    setDropZoneActive(false);
+                    return;
+                }
+                const result = findAndRemoveNode(outline, draggedNodeId);
+                if (result) {
+                    let newOutline;
+                    if (dragOverZone === 'child') {
+                        newOutline = insertAsChild(result.newNodes, targetNodeId, result.node);
+                        setExpanded({ ...expanded, [targetNodeId]: true });
+                    } else if (dragOverZone === 'after' && dragOverParentId) {
+                        newOutline = insertAfterParent(result.newNodes, dragOverParentId, result.node);
+                    } else {
+                        newOutline = insertNodeBefore(result.newNodes, targetNodeId, result.node);
+                    }
+                    saveToHistory(newOutline);
+                }
+                setDraggedNodeId(null);
+                setDragOverNodeId(null);
+                setDropZoneActive(false);
+            };
+            
+            const handleDropZoneOver = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDropZoneActive(true);
+            };
+            
+            const handleDropZoneDrop = (e) => {
+                e.preventDefault();
+                if (!draggedNodeId) return;
+                
+                const findAndRemoveNode = (nodes, id) => {
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (nodes[i].id === id) return { node: nodes[i], newNodes: nodes.filter((_, idx) => idx !== i) };
+                        if (nodes[i].children) {
+                            const result = findAndRemoveNode(nodes[i].children, id);
+                            if (result) return { node: result.node, newNodes: nodes.map((n, idx) => idx === i ? { ...n, children: result.newNodes } : n) };
+                        }
+                    }
+                    return null;
+                };
+                
+                const result = findAndRemoveNode(outline, draggedNodeId);
+                if (result) {
+                    const newOutline = [...result.newNodes, result.node];
+                    saveToHistory(newOutline);
+                }
+                
+                setDraggedNodeId(null);
+                setDropZoneActive(false);
+            };
+            
+            const expandAll = () => {
+                const allExpanded = {};
+                const expandAllNodes = (nodes) => nodes.forEach(node => {
+                    if (node.children && node.children.length > 0) {
+                        allExpanded[node.id] = true;
+                        expandAllNodes(node.children);
+                    }
+                });
+                expandAllNodes(visibleOutline);
+                setExpanded(allExpanded);
+            };
+
+            const collapseAll = () => {
+                const allCollapsed = {};
+                const collapseAllNodes = (nodes) => nodes.forEach(node => {
+                    if (node.children && node.children.length > 0) {
+                        allCollapsed[node.id] = false;
+                        collapseAllNodes(node.children);
+                    }
+                });
+                collapseAllNodes(visibleOutline);
+                setExpanded(allCollapsed);
+            };
+
+            const toggleFirstLevel = () => {
+                const firstLevelExpanded = visibleOutline.some(node =>
+                    node.children && node.children.length > 0 && expanded[node.id] !== false
+                );
+                const newExpanded = {};
+                if (firstLevelExpanded) {
+                    visibleOutline.forEach(node => {
+                        if (node.children && node.children.length > 0) newExpanded[node.id] = false;
+                    });
+                } else {
+                    visibleOutline.forEach(node => {
+                        if (node.children && node.children.length > 0) newExpanded[node.id] = true;
+                    });
+                }
+                setExpanded(newExpanded);
+            };
+            
+            const generateSlides = () => {
+                const slides = [];
+                const MAX_ITEMS_PER_SLIDE = 6; // Adjust based on font size and spacing
+                
+                const collectItems = (node, currentDepth, maxDepth) => {
+                    if (currentDepth >= maxDepth) {
+                        return [node.text];
+                    }
+                    if (!node.children || node.children.length === 0) {
+                        return [node.text];
+                    }
+                    const items = [];
+                    node.children.forEach(child => {
+                        const childItems = collectItems(child, currentDepth + 1, maxDepth);
+                        items.push(...childItems);
+                    });
+                    return items;
+                };
+                
+                outline.forEach(node => {
+                    const items = node.children ? collectItems({ children: node.children }, 1, presentationDepth) : [];
+                    
+                    if (items.length <= MAX_ITEMS_PER_SLIDE) {
+                        // Fits on one slide
+                        slides.push({ title: node.text, items: items, isContinuation: false });
+                    } else {
+                        // Split into multiple slides with continuation markers
+                        for (let i = 0; i < items.length; i += MAX_ITEMS_PER_SLIDE) {
+                            const chunk = items.slice(i, i + MAX_ITEMS_PER_SLIDE);
+                            const isContinuation = i > 0;
+                            const hasMore = i + MAX_ITEMS_PER_SLIDE < items.length;
+                            slides.push({ 
+                                title: node.text, 
+                                items: chunk, 
+                                isContinuation: isContinuation,
+                                hasMore: hasMore
+                            });
+                        }
+                    }
+                });
+                
+                return slides;
+            };
+            
+            const slides = generateSlides();
+            
+            return (
+                <div className="app-container">
+                    <header className="header">
+                        <div className="header-top">
+                            <div className="logo">More MORE</div>
+                            <a href="more-outliner-manual.html" target="_blank" className="manual-link">? Manual</a>
+                            {savedMeta.at && (
+                                <div className="saved-stamp">
+                                    Saved {new Date(savedMeta.at).toLocaleString([], {dateStyle:'medium', timeStyle:'short'})}
+                                    {savedMeta.location && <> · {savedMeta.location.lat.toFixed(4)}, {savedMeta.location.lng.toFixed(4)} ±{savedMeta.location.accuracy}m</>}
+                                </div>
+                            )}
+                        </div>
+                        <div className="toolbar">
+                            <button className="btn btn-format btn-format-b" onMouseDown={(e) => e.preventDefault()} onClick={() => formatText('bold')} title="Bold">B</button>
+                            <button className="btn btn-format btn-format-i" onMouseDown={(e) => e.preventDefault()} onClick={() => formatText('italic')} title="Italic">I</button>
+                            <button className="btn btn-format btn-format-u" onMouseDown={(e) => e.preventDefault()} onClick={() => formatText('underline')} title="Underline">U</button>
+                            <div className="color-picker-wrap" ref={colorPickerRef}>
+                                <button className="btn btn-format" onMouseDown={(e) => e.preventDefault()} onClick={() => setShowColorPicker(p => !p)} title="Font Color">
+                                    <span style={{borderBottom:`3px solid ${lastFontColor === '#FFFFFF' ? '#ccc' : lastFontColor}`, paddingBottom:'1px'}}>A</span>
+                                </button>
+                                {showColorPicker && (
+                                    <div className="color-picker-popover">
+                                        <div className="cp-grid">
+                                            {FONT_COLORS.map(color => (
+                                                <div key={color}
+                                                    className={`cs${color.toUpperCase() === lastFontColor.toUpperCase() ? ' cs-sel' : ''}`}
+                                                    style={{background: color, outline: color === '#FFFFFF' ? '1px solid #ccc' : ''}}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => applyColor(color)}
+                                                    title={color}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className="cp-custom">
+                                            <span>More</span>
+                                            <input type="color" defaultValue={lastFontColor} onMouseDown={saveSelBeforeCustomPick} onChange={(e) => applyCustomColor(e.target.value)} title="Custom color" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="toolbar-sep" />
+                            <button className="btn" onClick={newDocument}>📄 New</button>
+                            <button className="btn" onClick={() => { const newNode = { id: nextId, text: 'New section', cloneId: null, comment: '', children: [] }; setNextId(nextId + 1); saveToHistory([...outline, newNode]); }}>+ Section</button>
+                            <button className="btn" onClick={undo} disabled={historyIndex <= 0}>↶ Undo</button>
+                            <button className="btn" onClick={redo} disabled={historyIndex >= history.length - 1}>↷ Redo</button>
+                            <button className="btn" onClick={saveOutline}>💾 Save</button>
+                            <button className="btn" onClick={loadOutline}>📂 Load</button>
+                            <button className="btn" onClick={insertImageNode} title="Insert image (PNG, SVG, JPG…)">🖼 Image</button>
+                            <button className="btn" onClick={printOutline}>🖨 Print</button>
+                            <button className="btn" onClick={exportToOPML}>Export OPML</button>
+                            <button className="btn" onClick={exportToMarkdown}>Export MD</button>
+                            <button className="btn" onClick={exportToHTML}>Export HTML</button>
+                            <button className="btn" onClick={exportToFedWiki}>Export FedWiki</button>
+                            <button className="btn" onClick={sendToWiki} title="Send outline as ghost page to FedWiki lineup">→ Wiki Ghost</button>
+                            <button className="btn" onClick={sendToWikiItem} title="Save outline back into the originating FedWiki plugin item">→ Wiki Item</button>
+                            <button className="btn" onClick={() => setShowComments(!showComments)}>
+                                {showComments ? '💬 Hide Comments' : '💬 Show Comments'}
+                            </button>
+                            <button className="btn" onClick={expandAll}>Expand All</button>
+                            <button className="btn" onClick={collapseAll}>Collapse All</button>
+                            <button className="btn" onClick={() => {
+                                const depth = parseInt(prompt('Enter presentation depth (1-5):\n1 = Only level 1\n2 = Levels 1-2 (default)\n3 = Levels 1-3\netc.', '2'));
+                                if (depth && depth >= 1 && depth <= 10) {
+                                    setPresentationDepth(depth);
+                                    setPresentationMode(true);
+                                } else if (depth) {
+                                    alert('Please enter a number between 1 and 10');
+                                }
+                            }}>Present</button>
+                            <div className="toolbar-sep" />
+                            <button className="btn" title="Search (Cmd+F)" onClick={() => { setSearchActive(s => !s); if (!searchActive) setTimeout(() => searchInputRef.current?.focus(), 50); }}>🔍</button>
+                            {searchActive && (
+                                <div className="search-bar">
+                                    <input
+                                        ref={searchInputRef}
+                                        className="search-input"
+                                        type="text"
+                                        placeholder="Search…"
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Escape') { setSearchActive(false); setSearchQuery(''); }
+                                            else if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                setSearchIdx(i => searchMatches.length ? (i + 1) % searchMatches.length : 0);
+                                            }
+                                        }}
+                                    />
+                                    <span className="search-count">
+                                        {searchQuery.trim()
+                                            ? searchMatches.length > 0
+                                                ? `${(searchIdx % searchMatches.length) + 1} / ${searchMatches.length}`
+                                                : 'no results'
+                                            : ''}
+                                    </span>
+                                    <button className="btn" style={{padding:'0.35rem 0.5rem'}} onClick={() => setSearchIdx(i => searchMatches.length ? (i - 1 + searchMatches.length) % searchMatches.length : 0)} disabled={searchMatches.length <= 1}>↑</button>
+                                    <button className="btn" style={{padding:'0.35rem 0.5rem'}} onClick={() => setSearchIdx(i => searchMatches.length ? (i + 1) % searchMatches.length : 0)} disabled={searchMatches.length <= 1}>↓</button>
+                                    <button className="btn" style={{padding:'0.35rem 0.5rem'}} onClick={() => { setSearchActive(false); setSearchQuery(''); }}>✕</button>
+                                </div>
+                            )}
+                        </div>
+                    </header>
+                    <div className="main-content">
+                        <aside className="sidebar">
+                            <div className="sidebar-section">
+                                <h3>Outline Style</h3>
+                                {[
+                                    { key: 'default',  label: 'None',    preview: '—' },
+                                    { key: 'legal',    label: 'Legal',   preview: '1  1.1  1.1.1' },
+                                    { key: 'harvard',  label: 'Harvard', preview: 'I  A  1  a  i' },
+                                    { key: 'numeric',  label: 'Numeric', preview: '1.  2.  3.' },
+                                    { key: 'bullets',  label: 'Bullets', preview: '•  ◦  ▪  ▫  –' },
+                                    { key: 'leaders',  label: 'Leaders', preview: '→  ◆  ✦  ✧  ✔' },
+                                ].map(({ key, label, preview }) => (
+                                    <div key={key} className={`style-option ${(key === 'legal' ? style === 'numbered' : style === key) ? 'active' : ''}`}
+                                        onClick={() => setStyle(key === 'legal' ? 'numbered' : key)}
+                                        title={preview}>
+                                        {(key === 'legal' ? style === 'numbered' : style === key) ? `✓ ${label}` : label}
+                                        <span style={{fontSize:'0.65rem', marginLeft:'0.4rem', opacity:0.6}}>{preview}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="sidebar-section">
+                                <h3>Font</h3>
+                                {['mono', 'serif', 'courier', 'display'].map(f => (
+                                    <div key={f} className={`style-option ${font === f ? 'active' : ''}`} onClick={() => setFont(f)}>{f.charAt(0).toUpperCase() + f.slice(1)}</div>
+                                ))}
+                            </div>
+                            <div className="sidebar-section">
+                                <h3>Spacing</h3>
+                                {['tight', 'normal', 'relaxed'].map(s => (
+                                    <div key={s} className={`style-option ${spacing === s && !customSpacing ? 'active' : ''}`} onClick={() => { setSpacing(s); setCustomSpacing(false); }}>{s.charAt(0).toUpperCase() + s.slice(1)}</div>
+                                ))}
+                                <div className={`style-option ${customSpacing ? 'active' : ''}`} onClick={() => setCustomSpacing(!customSpacing)}>
+                                    {customSpacing ? '✓ Custom' : 'Custom'}
+                                </div>
+                                {customSpacing && (
+                                    <div style={{marginTop: '0.5rem', fontSize: '0.7rem'}}>
+                                        <label style={{display: 'block', marginBottom: '0.3rem'}}>
+                                            Node Margin: {nodeMargin}px
+                                            <input type="range" min="0" max="30" value={nodeMargin} onChange={(e) => setNodeMargin(parseInt(e.target.value))} style={{width: '100%', display: 'block'}} />
+                                        </label>
+                                        <label style={{display: 'block', marginBottom: '0.3rem'}}>
+                                            Text Padding: {textPadding}px
+                                            <input type="range" min="0" max="30" value={textPadding} onChange={(e) => setTextPadding(parseInt(e.target.value))} style={{width: '100%', display: 'block'}} />
+                                        </label>
+                                        <label style={{display: 'block'}}>
+                                            Line Height: {lineHeight}
+                                            <input type="range" min="0.9" max="2.5" step="0.05" value={lineHeight} onChange={(e) => setLineHeight(parseFloat(e.target.value))} style={{width: '100%', display: 'block'}} />
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                        </aside>
+                        <div className="editor-area"
+                            onDragOver={(e) => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); }}
+                            onDrop={handleEditorAreaDrop}
+                        >
+                            <div 
+                                className={`outline-container style-${style} font-${font} spacing-${spacing}`}
+                                data-custom-spacing={customSpacing}
+                                style={customSpacing ? {
+                                    '--custom-node-margin': nodeMargin,
+                                    '--custom-text-padding': textPadding,
+                                    '--custom-line-height': lineHeight
+                                } : {}}
+                            >
+                                {hoistPath.length > 0 && (
+                                    <div style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'0.5rem 0.75rem',marginBottom:'1rem',background:'rgba(212,98,47,0.08)',borderLeft:'4px solid var(--accent)',fontSize:'0.85rem',flexWrap:'wrap'}}>
+                                        <span style={{color:'var(--text-secondary)'}}>Hoisted:</span>
+                                        <button style={{background:'none',border:'none',color:'var(--accent)',cursor:'pointer',fontWeight:600,padding:'0.1rem 0.3rem'}} onClick={dehoist}>Document</button>
+                                        {hoistPath.map((crumb, i) => (
+                                            <React.Fragment key={crumb.id}>
+                                                <span style={{color:'var(--text-secondary)'}}>›</span>
+                                                <button style={{background:'none',border:'none',color: i === hoistPath.length - 1 ? 'var(--text-primary)' : 'var(--accent)',cursor: i === hoistPath.length - 1 ? 'default' : 'pointer',fontWeight:600,padding:'0.1rem 0.3rem'}} onClick={() => i < hoistPath.length - 1 ? dehoistTo(i) : null}>{crumb.text || '(untitled)'}</button>
+                                            </React.Fragment>
+                                        ))}
+                                        <button style={{marginLeft:'auto',background:'var(--accent)',color:'white',border:'none',padding:'0.2rem 0.6rem',cursor:'pointer',fontWeight:600,fontSize:'0.75rem'}} onClick={dehoist}>Dehoist</button>
+                                    </div>
+                                )}
+                                <div className="title-line">
+                                    <button
+                                        className={`title-toggle ${visibleOutline.some(n => n.children?.length > 0 && expanded[n.id] !== false) ? 'expanded' : 'collapsed'}`}
+                                        onClick={toggleFirstLevel}
+                                        title="Toggle first level"
+                                    />
+                                    <textarea
+                                        ref={titleRef}
+                                        className="title-input"
+                                        value={hoistPath.length > 0 ? hoistPath[hoistPath.length - 1].text : title}
+                                        onChange={(e) => hoistPath.length === 0 && setTitle(e.target.value)}
+                                        readOnly={hoistPath.length > 0}
+                                        rows="1"
+                                        placeholder="Document Title"
+                                    />
+                                </div>
+                                {visibleOutline.map((node, idx) => (
+                                    <OutlineNode key={node.id} node={node} depth={0} index={idx} siblingCount={visibleOutline.length} numberPrefix="" parentId={hoistPath.length > 0 ? hoistPath[hoistPath.length - 1].id : null} onUpdate={updateNodeText} onUpdateComment={updateNodeComment} onUpdateImageProps={updateImageNode} onAddChild={addChild} onAddComment={addComment} onAddSibling={addSibling} onDelete={deleteNode} onClone={cloneNode} onMove={moveNode} onIndent={indentNode} onOutdent={outdentNode} showComments={showComments} onDragStart={(id, depth, parentId) => { setDraggedNodeId(id); setDraggedDepth(depth); setDraggedParentId(parentId); }} onDragOver={(id, zone, depth, parentId) => { setDragOverNodeId(id); setDragOverZone(zone); setDragOverDepth(depth); setDragOverParentId(parentId); }} onDrop={handleDrop} onDragEnd={() => { setDraggedNodeId(null); setDragOverNodeId(null); setDropZoneActive(false); document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging')); }} expanded={expanded} onToggleExpand={(id) => setExpanded({ ...expanded, [id]: !expanded[id] })} numberingStyle={style} clones={clones} dragOverId={dragOverNodeId} dragOverZone={dragOverZone} onHoist={hoistNode} searchMatchIds={searchMatchIds} searchCurrentId={searchCurrentId} />
+                                ))}
+                                <div ref={dropZoneRef} className={`drop-zone-end ${dropZoneActive ? 'drag-over' : ''}`} onDragOver={handleDropZoneOver} onDragLeave={() => setDropZoneActive(false)} onDrop={handleDropZoneDrop}>
+                                    {dropZoneActive ? '↓ Drop here to move to bottom ↓' : 'Drop zone - drag items here to move to end'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className={`presentation-mode ${presentationMode ? 'active' : ''}`}>
+                        <div className="slide-container print-all-slides">
+                            {slides.map((slide, idx) => (
+                                <div key={idx} className="slide" style={{display: idx === currentSlide ? 'block' : 'none'}}>
+                                    <h1>
+                                        <span dangerouslySetInnerHTML={{__html: slide.title}} />
+                                        {slide.isContinuation && <span style={{color: 'var(--accent)', fontStyle: 'italic', fontSize: '0.8em', marginLeft: '1rem'}}>(Continued)</span>}
+                                    </h1>
+                                    <ul>{slide.items.map((item, itemIdx) => <li key={itemIdx} dangerouslySetInnerHTML={{__html: item}} />)}</ul>
+                                    {slide.hasMore && <div style={{marginTop: '2rem', color: 'var(--accent)', fontStyle: 'italic', fontWeight: 'bold', textAlign: 'right', fontSize: '1.2rem'}}>→ Continued on next slide...</div>}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="presentation-controls">
+                            <div style={{display: 'flex', gap: '1rem'}}>
+                                <button className="nav-btn" onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0}>← Previous</button>
+                                <button className="nav-btn" onClick={() => setCurrentSlide(Math.min(slides.length - 1, currentSlide + 1))} disabled={currentSlide === slides.length - 1}>Next →</button>
+                            </div>
+                            <div style={{color: 'var(--bg-primary)', fontWeight: 600}}>
+                                Slide {currentSlide + 1} of {slides.length} (Depth: {presentationDepth})
+                            </div>
+                            <div style={{display: 'flex', gap: '1rem'}}>
+                                <button className="nav-btn" onClick={() => window.print()}>🖨 Print PDF</button>
+                                <button className="nav-btn" onClick={() => { setPresentationMode(false); setCurrentSlide(0); }}>Exit</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

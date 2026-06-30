@@ -226,8 +226,7 @@ function Node({ node, depth, expanded, onToggle, onSelect, onEdit, selectedId, e
 
 // ─── Main plugin component ───────────────────────────────────────────────────
 
-const PROXY = 'http://localhost:8765'
-const MORE_URL = PROXY + '/tools/more-outliner.html'
+const MORE_URL = window.location.origin + '/plugins/rcnoutliner/more-outliner.html'
 const WINDOW_NAME = 'rcn-outliner'
 
 // Ensure all nodes have cloneId: null so MORE doesn't flag them as clones
@@ -240,7 +239,7 @@ function normalizeOutline(nodes) {
   }))
 }
 
-function OutlinerPlugin({ item, pageSlug }) {
+function OutlinerPlugin({ item, $item }) {
   const [outline, setOutline] = useState(() => normalizeOutline(item.outline))
   const [title, setTitle] = useState(() => item.outlineTitle || '')
   const [expanded, setExpanded] = useState({})
@@ -252,6 +251,7 @@ function OutlinerPlugin({ item, pageSlug }) {
   const rowRef = useRef(null)
   const containerRef = useRef(null)
   const saveTimer = useRef(null)
+  const $itemRef = useRef($item)
 
   // Refs so window-level capture handler can see current state without stale closure
   const outlineRef = useRef(outline)
@@ -283,22 +283,18 @@ function OutlinerPlugin({ item, pageSlug }) {
     }
   }, [editingId, focusTick])
 
-  // Debounced save to disk
-  const persist = useCallback((newOutline, newTitle) => {
+  // Debounced save via FedWiki's native pageHandler.put
+  const persist = useCallback(() => {
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      fetch(PROXY + '/api/wiki-save-item', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          site: 'localhost',
-          slug: pageSlug,
-          id: item.id,
-          updates: { outline: newOutline, outlineTitle: newTitle }
-        })
-      }).catch(e => console.warn('[rcn-outliner] save failed:', e))
+      try {
+        const $page = $itemRef.current.parents('.page:first')
+        wiki.pageHandler.put($page, { type: 'edit', id: item.id, item: item })
+      } catch (e) {
+        console.warn('[rcn-outliner] save failed:', e)
+      }
     }, 600)
-  }, [pageSlug, item.id])
+  }, [item])
 
   const update = useCallback((newOutline, newTitle) => {
     const t = newTitle !== undefined ? newTitle : title
@@ -306,7 +302,7 @@ function OutlinerPlugin({ item, pageSlug }) {
     item.outline = newOutline
     item.outlineTitle = t
     setDirty(true)
-    persist(newOutline, t)
+    persist()
   }, [title, persist, item])
 
   // Keep updateRef current so the window capture handler can call it
@@ -470,7 +466,7 @@ function OutlinerPlugin({ item, pageSlug }) {
         setTitle(newTitle)
         item.outline = newOutline
         item.outlineTitle = newTitle
-        persist(newOutline, newTitle)
+        persist()
       }
     }
     window.addEventListener('message', handler)
@@ -632,14 +628,6 @@ function injectStyle() {
   document.head.appendChild(s)
 }
 
-function getPageSlug($item) {
-  try {
-    return $item.parents('.page').data('key') || ''
-  } catch (e) {
-    return ''
-  }
-}
-
 if (typeof window !== 'undefined') {
   window.plugins = window.plugins || {}
   const outlinerPlugin = {
@@ -648,7 +636,7 @@ if (typeof window !== 'undefined') {
       const container = document.createElement('div')
       $item[0].appendChild(container)
       render(
-        <OutlinerPlugin item={item} pageSlug={getPageSlug($item)} />,
+        <OutlinerPlugin item={item} $item={$item} />,
         container
       )
     },

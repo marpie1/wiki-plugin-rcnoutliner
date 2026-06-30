@@ -9,12 +9,12 @@
     {
       "type": "paragraph",
       "id": "a1b2c3d4e5f60001",
-      "text": "**Keyboard shortcuts:** **Enter** adds a sibling node below. **Tab** indents (makes the node a child of the one above). **Shift-Tab** outdents back to the parent's level. **F2** or **double-click** enters edit mode. **Escape** exits edit mode. **Delete** or **Backspace** on an empty node removes it. **Arrow Up / Down** navigate between nodes. Typing any printable character while a node is selected jumps directly into edit mode."
+      "text": "Keyboard shortcuts — Enter: add a sibling node below. Tab: indent (make the node a child of the one above). Shift-Tab: outdent back to the parent's level. F2 or double-click: enter edit mode. Escape: exit edit mode. Delete or Backspace on an empty node: remove it. Arrow Up / Down: navigate between nodes. Typing any printable character while a node is selected jumps directly into edit mode."
     },
     {
       "type": "paragraph",
       "id": "9f2b6e7a3d1c8054",
-      "text": "Click **MORE ↗** to open the full MORE Outliner in a popup window. MORE adds **Hoist** — focus on any subtree by making it the temporary root, hiding everything above it. Exports: **Markdown** (indented list), **HTML** (nested list), and **FedWiki ghost page** (sends the outline as a new page into the wiki lineup, with each top-level node as a paragraph). Changes made in MORE are saved back to the wiki item when you click Save."
+      "text": "Click MORE to open the full MORE Outliner in a popup window. MORE adds Hoist — focus on any subtree by making it the temporary root, hiding everything above it. Exports: Markdown (indented list), HTML (nested list), and FedWiki ghost page (sends the outline as a new page into the wiki lineup, with each top-level node as a paragraph). Changes made in MORE are saved back to the wiki item when you click Save."
     },
     {
       "type": "paragraph",
@@ -57,7 +57,7 @@
       "item": {
         "type": "paragraph",
         "id": "a1b2c3d4e5f60001",
-        "text": "**Keyboard shortcuts:** **Enter** adds a sibling node below. **Tab** indents (makes the node a child of the one above). **Shift-Tab** outdents back to the parent's level. **F2** or **double-click** enters edit mode. **Escape** exits edit mode. **Delete** or **Backspace** on an empty node removes it. **Arrow Up / Down** navigate between nodes. Typing any printable character while a node is selected jumps directly into edit mode."
+        "text": "Keyboard shortcuts — Enter: add a sibling node below. Tab: indent (make the node a child of the one above). Shift-Tab: outdent back to the parent's level. F2 or double-click: enter edit mode. Escape: exit edit mode. Delete or Backspace on an empty node: remove it. Arrow Up / Down: navigate between nodes. Typing any printable character while a node is selected jumps directly into edit mode."
       },
       "date": 1782864002000
     },
@@ -68,7 +68,7 @@
       "item": {
         "type": "paragraph",
         "id": "9f2b6e7a3d1c8054",
-        "text": "Click **MORE ↗** to open the full MORE Outliner in a popup window. MORE adds **Hoist** — focus on any subtree by making it the temporary root, hiding everything above it. Exports: **Markdown** (indented list), **HTML** (nested list), and **FedWiki ghost page** (sends the outline as a new page into the wiki lineup, with each top-level node as a paragraph). Changes made in MORE are saved back to the wiki item when you click Save."
+        "text": "Click MORE to open the full MORE Outliner in a popup window. MORE adds Hoist — focus on any subtree by making it the temporary root, hiding everything above it. Exports: Markdown (indented list), HTML (nested list), and FedWiki ghost page (sends the outline as a new page into the wiki lineup, with each top-level node as a paragraph). Changes made in MORE are saved back to the wiki item when you click Save."
       },
       "date": 1782864003000
     },

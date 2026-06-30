@@ -1,0 +1,77 @@
+{
+  "title": "About Rcnoutliner Plugin",
+  "story": [
+    {
+      "type": "paragraph",
+      "id": "c7e4a913f2b8d046",
+      "text": "The Rcnoutliner plugin embeds a hierarchical outliner directly in the wiki page. Nodes can be created, edited, indented, and reordered inline without leaving the wiki. Press Enter to add a sibling, Tab to indent, Shift-Tab to outdent, and F2 or double-click to edit."
+    },
+    {
+      "type": "paragraph",
+      "id": "9f2b6e7a3d1c8054",
+      "text": "Create an item using the factory. Click **MORE ↗** to open the full MORE Outliner in a popup window for advanced editing, Hoist, and export to Markdown, HTML, or FedWiki ghost page. Outline content is autosaved to the wiki via the sofi-proxy."
+    },
+    {
+      "type": "rcnoutliner",
+      "id": "5a3d8c1f4e9b7062",
+      "text": ""
+    },
+    {
+      "type": "paragraph",
+      "id": "1e6f9a4b2c7d3085",
+      "text": "Developed by Marc Pierson with Claude Sonnet 4.6 (Anthropic) for the ReLocalize Creativity Network. Source: [[https://github.com/marpie1/wiki-plugin-rcnoutliner]]. Published on npm as wiki-plugin-rcnoutliner."
+    }
+  ],
+  "journal": [
+    {
+      "type": "create",
+      "item": {
+        "title": "About Rcnoutliner Plugin"
+      },
+      "date": 1782864000000
+    },
+    {
+      "type": "add",
+      "id": "c7e4a913f2b8d046",
+      "item": {
+        "type": "paragraph",
+        "id": "c7e4a913f2b8d046",
+        "text": "The Rcnoutliner plugin embeds a hierarchical outliner directly in the wiki page. Nodes can be created, edited, indented, and reordered inline without leaving the wiki. Press Enter to add a sibling, Tab to indent, Shift-Tab to outdent, and F2 or double-click to edit."
+      },
+      "date": 1782864001000
+    },
+    {
+      "type": "add",
+      "id": "9f2b6e7a3d1c8054",
+      "after": "c7e4a913f2b8d046",
+      "item": {
+        "type": "paragraph",
+        "id": "9f2b6e7a3d1c8054",
+        "text": "Create an item using the factory. Click **MORE ↗** to open the full MORE Outliner in a popup window for advanced editing, Hoist, and export to Markdown, HTML, or FedWiki ghost page. Outline content is autosaved to the wiki via the sofi-proxy."
+      },
+      "date": 1782864002000
+    },
+    {
+      "type": "add",
+      "id": "5a3d8c1f4e9b7062",
+      "after": "9f2b6e7a3d1c8054",
+      "item": {
+        "type": "rcnoutliner",
+        "id": "5a3d8c1f4e9b7062",
+        "text": ""
+      },
+      "date": 1782864003000
+    },
+    {
+      "type": "add",
+      "id": "1e6f9a4b2c7d3085",
+      "after": "5a3d8c1f4e9b7062",
+      "item": {
+        "type": "paragraph",
+        "id": "1e6f9a4b2c7d3085",
+        "text": "Developed by Marc Pierson with Claude Sonnet 4.6 (Anthropic) for the ReLocalize Creativity Network. Source: [[https://github.com/marpie1/wiki-plugin-rcnoutliner]]. Published on npm as wiki-plugin-rcnoutliner."
+      },
+      "date": 1782864004000
+    }
+  ]
+}

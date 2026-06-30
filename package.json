@@ -1,6 +1,6 @@
 {
   "name": "wiki-plugin-rcnoutliner",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Federated Wiki - RCN Outliner Plug-in",
   "keywords": [
     "wiki",
@@ -16,7 +16,8 @@
   "files": [
     "client/rcnoutliner.js",
     "factory.json",
-    "index.js"
+    "index.js",
+    "pages"
   ],
   "scripts": {
     "build": "esbuild src/index.jsx --bundle --minify --jsx-factory=h --jsx-fragment=Fragment --outfile=client/rcnoutliner.js --external:jquery",

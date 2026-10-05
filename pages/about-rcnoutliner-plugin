@@ -4,22 +4,22 @@
     {
       "type": "paragraph",
       "id": "c7e4a913f2b8d046",
-      "text": "The Rcnoutliner plugin embeds a hierarchical outliner directly in a wiki page. Create, edit, indent, and reorder nodes inline without leaving the wiki. Use it to capture structured thinking — agendas, plans, breakdowns, and outlines — as living wiki content."
+      "text": "The Rcnoutliner plugin embeds a hierarchical outliner directly in a wiki page. Create, edit, indent, and reorder nodes inline without leaving the wiki. Use it to capture structured thinking \u2014 agendas, plans, breakdowns, and outlines \u2014 as living wiki content."
     },
     {
       "type": "paragraph",
       "id": "a1b2c3d4e5f60001",
-      "text": "Keyboard shortcuts — Enter: add a sibling node below. Tab: indent (make the node a child of the one above). Shift-Tab: outdent back to the parent's level. F2 or double-click: enter edit mode. Escape: exit edit mode. Delete or Backspace on an empty node: remove it. Arrow Up / Down: navigate between nodes. Typing any printable character while a node is selected jumps directly into edit mode."
+      "text": "Keyboard shortcuts \u2014 Enter: add a sibling node below. Tab: indent (make the node a child of the one above). Shift-Tab: outdent back to the parent's level. F2 or double-click: enter edit mode. Escape: exit edit mode. Delete or Backspace on an empty node: remove it. Arrow Up / Down: navigate between nodes. Typing any printable character while a node is selected jumps directly into edit mode."
     },
     {
       "type": "paragraph",
       "id": "9f2b6e7a3d1c8054",
-      "text": "Click MORE to open the full MORE Outliner in a popup window. MORE adds Hoist — focus on any subtree by making it the temporary root, hiding everything above it. Exports: Markdown (indented list), HTML (nested list), and FedWiki ghost page (sends the outline as a new page into the wiki lineup, with each top-level node as a paragraph). Changes made in MORE are saved back to the wiki item when you click Save."
+      "text": "Click MORE to open the full MORE Outliner in a popup window. MORE adds Hoist \u2014 focus on any subtree by making it the temporary root, hiding everything above it. Exports: Markdown (indented list), HTML (nested list), and FedWiki ghost page (sends the outline as a new page into the wiki lineup, with each top-level node as a paragraph). Changes made in MORE are saved back to the wiki item when you click Save."
     },
     {
       "type": "paragraph",
       "id": "b2c3d4e5f6a70002",
-      "text": "Outline content is autosaved to the wiki via FedWiki's native page API. The plugin works on any FedWiki instance — no local proxy or server required."
+      "text": "Outline content is autosaved to the wiki via FedWiki's native page API. The plugin works on any FedWiki instance \u2014 no local proxy or server required."
     },
     {
       "type": "rcnoutliner",
@@ -29,7 +29,7 @@
     {
       "type": "paragraph",
       "id": "1e6f9a4b2c7d3085",
-      "text": "Developed by Marc Pierson with Claude Sonnet 4.6 (Anthropic) for the ReLocalize Creativity Network. Source: [[https://github.com/marpie1/wiki-plugin-rcnoutliner]]. Published on npm as wiki-plugin-rcnoutliner."
+      "text": "Developed by Marc Pierson with Claude Sonnet 4.6 (Anthropic) for the ReLocalize Creativity Network. Source: [https://github.com/marpie1/wiki-plugin-rcnoutliner GitHub]. Published on npm as wiki-plugin-rcnoutliner."
     }
   ],
   "journal": [
@@ -46,7 +46,7 @@
       "item": {
         "type": "paragraph",
         "id": "c7e4a913f2b8d046",
-        "text": "The Rcnoutliner plugin embeds a hierarchical outliner directly in a wiki page. Create, edit, indent, and reorder nodes inline without leaving the wiki. Use it to capture structured thinking — agendas, plans, breakdowns, and outlines — as living wiki content."
+        "text": "The Rcnoutliner plugin embeds a hierarchical outliner directly in a wiki page. Create, edit, indent, and reorder nodes inline without leaving the wiki. Use it to capture structured thinking \u2014 agendas, plans, breakdowns, and outlines \u2014 as living wiki content."
       },
       "date": 1782864001000
     },
@@ -57,7 +57,7 @@
       "item": {
         "type": "paragraph",
         "id": "a1b2c3d4e5f60001",
-        "text": "Keyboard shortcuts — Enter: add a sibling node below. Tab: indent (make the node a child of the one above). Shift-Tab: outdent back to the parent's level. F2 or double-click: enter edit mode. Escape: exit edit mode. Delete or Backspace on an empty node: remove it. Arrow Up / Down: navigate between nodes. Typing any printable character while a node is selected jumps directly into edit mode."
+        "text": "Keyboard shortcuts \u2014 Enter: add a sibling node below. Tab: indent (make the node a child of the one above). Shift-Tab: outdent back to the parent's level. F2 or double-click: enter edit mode. Escape: exit edit mode. Delete or Backspace on an empty node: remove it. Arrow Up / Down: navigate between nodes. Typing any printable character while a node is selected jumps directly into edit mode."
       },
       "date": 1782864002000
     },
@@ -68,7 +68,7 @@
       "item": {
         "type": "paragraph",
         "id": "9f2b6e7a3d1c8054",
-        "text": "Click MORE to open the full MORE Outliner in a popup window. MORE adds Hoist — focus on any subtree by making it the temporary root, hiding everything above it. Exports: Markdown (indented list), HTML (nested list), and FedWiki ghost page (sends the outline as a new page into the wiki lineup, with each top-level node as a paragraph). Changes made in MORE are saved back to the wiki item when you click Save."
+        "text": "Click MORE to open the full MORE Outliner in a popup window. MORE adds Hoist \u2014 focus on any subtree by making it the temporary root, hiding everything above it. Exports: Markdown (indented list), HTML (nested list), and FedWiki ghost page (sends the outline as a new page into the wiki lineup, with each top-level node as a paragraph). Changes made in MORE are saved back to the wiki item when you click Save."
       },
       "date": 1782864003000
     },
@@ -79,7 +79,7 @@
       "item": {
         "type": "paragraph",
         "id": "b2c3d4e5f6a70002",
-        "text": "Outline content is autosaved to the wiki via FedWiki's native page API. The plugin works on any FedWiki instance — no local proxy or server required."
+        "text": "Outline content is autosaved to the wiki via FedWiki's native page API. The plugin works on any FedWiki instance \u2014 no local proxy or server required."
       },
       "date": 1782864004000
     },
@@ -104,6 +104,16 @@
         "text": "Developed by Marc Pierson with Claude Sonnet 4.6 (Anthropic) for the ReLocalize Creativity Network. Source: [[https://github.com/marpie1/wiki-plugin-rcnoutliner]]. Published on npm as wiki-plugin-rcnoutliner."
       },
       "date": 1782864006000
+    },
+    {
+      "type": "edit",
+      "id": "1e6f9a4b2c7d3085",
+      "item": {
+        "type": "paragraph",
+        "id": "1e6f9a4b2c7d3085",
+        "text": "Developed by Marc Pierson with Claude Sonnet 4.6 (Anthropic) for the ReLocalize Creativity Network. Source: [https://github.com/marpie1/wiki-plugin-rcnoutliner GitHub]. Published on npm as wiki-plugin-rcnoutliner."
+      },
+      "date": 1791164815533
     }
   ]
 }
